@@ -6,7 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -161,8 +160,6 @@ static void codec2_encode_1300(unsigned char * bits, short speech[]) {
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
         pack_natural_or_gray(bits, &nbit, lsp_indexes[i], lsp_bits_encode(i), bss_gray);
     }
-
-    assert(nbit == (unsigned) codec2_bits_per_frame());
 }
 
 static void codec2_decode_1300(short speech[], const unsigned char * bits, float ber_est) {
@@ -307,9 +304,6 @@ static void ear_protection(float in_out[], int n) {
 }
 
 void codec2_set_lpc_post_filter(int enable, int bass_boost, float beta, float gamma) {
-    assert((beta >= 0.0f) && (beta <= 1.0f));
-    assert((gamma >= 0.0f) && (gamma <= 1.0f));
-
     bss_lpc_pf = enable;
     bass_boost = bass_boost;
     bss_beta = beta;

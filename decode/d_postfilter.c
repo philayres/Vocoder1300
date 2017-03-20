@@ -6,7 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -31,7 +30,6 @@ void postfilter(MODEL *model, float *bg_est) {
     for (m = 1; m <= model->L; m++)
         e += model->A[m] * model->A[m];
 
-    assert(e > 0.0f);
     e = 10.0f * log10f(e / model->L);
 
     /* If beneath threshold, update bg estimate.  The idea

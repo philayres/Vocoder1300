@@ -38,3 +38,16 @@ xxd original.raw >original.hex
 diff original.hex my-result.hex
 ```
 As it stands right now, the audio sounds the same as codec2, but the RAW output from ```c2dec``` has some different bytes. Just a few bytes here and there. They seem to be off by 1 bit when they are wrong.
+
+```
+$ diff hts1-o.hex hts1.hex 
+6c6
+< 00000050: ec4c d5f0 f291 775c ddf5 90f3 d363 dfff  .L....w\.....c..
+---
+> 00000050: ec4c d5f0 f291 575c ddf5 90f3 d363 dfff  .L....W\.....c..
+25c25
+< 00000180: 50f0 ae63 300c c750 f04d 7210 0cd5 d0f0  P..c0..P.Mr.....
+---
+> 00000180: 50f0 ae63 300c c750 f04d 7210 0dd5 d0f0  P..c0..P.Mr.....
+```
+
