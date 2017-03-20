@@ -17,10 +17,10 @@ For Raspberry Pi 2 B+ I get:
 ```
 If you burst the ZIP file it will create all the directories, and you can just type ```make``` and it will build the library. I used -O2 for optimization.
 
-####Design Change
+#### Design Change
 I'm an old geezer, so I like to see my data in the BSS section, rather then allocated into RAM using malloc. So you will notice that right off the bat, as there is an API change where you don't have to worry about the malloc pointer.
 
-####Testing
+#### Testing
 Here's how I compile the test programs. Put the library file in ```/usr/local/lib``` and do a ```sudo ldconfig```:
 ```
   cc -O2 c2enc.c -o c2enc -lcodec1300 -lm
