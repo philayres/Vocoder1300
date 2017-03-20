@@ -37,6 +37,4 @@ xxd result.raw >my-result.hex
 xxd original.raw >original.hex
 diff original.hex my-result.hex
 ```
-When the two are exactly the same, I will declare victory...
-
 As it stands right now, the audio sounds the same as codec2, but the RAW output from ```c2dec``` has some different bytes. Just a few bytes here and there. They seem to be off by 1 bit when they are wrong.
