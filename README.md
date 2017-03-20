@@ -28,14 +28,13 @@ Then you can run the test programs (the binaries in the repository are for Ubunt
 ```
 ./c2enc hts1.raw hts1.c2
 ./c2dec hts1.c2 result.raw
-sox -r 8000 -c1 -e signed -b 16 result.raw test.wav
-play test.wav
+aplay -f S16_LE result.raw
 ```
 You can also use the original c2enc/c2dec in the codec2, to compare results. In this case you can:
 ```
-xxd result.raw >my-result.hex
-xxd original.raw >original.hex
-diff original.hex my-result.hex
+xxd hts1.c2 hts1.hex
+xxd hts1-o.c2 hts1-o.hex
+diff hts1-o.hex hts1.hex
 ```
 As it stands right now, the audio sounds the same as codec2, but the RAW output from ```c2dec``` has some different bytes. Just a few bytes here and there. They seem to be off by 1 bit when they are wrong.
 
