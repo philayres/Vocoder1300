@@ -1,9 +1,7 @@
 #### vocoder1300
 A codec2 LPC-10 1300 bps Speech Vocoder
 
-The purpose of this version of the vocoder, is to break out the encoder and decoder parts into separate directories, and to delete the other modes which are all deprecated anyway. No one uses anything besides 1300 and 700B.
-
-The 700B vocoder is in another repository, as that is used with the coherent modem.
+The purpose of this version of the vocoder, is to break out the encoder and decoder parts into separate directories, and to delete the other modes.
 
 The files were grouped using Netbeans, and compiled in Release mode. For the Ubuntu 64-bit I got the following size for the dynamic library:
 ```
@@ -41,4 +39,4 @@ diff original.hex my-result.hex
 ```
 When the two are exactly the same, I will declare victory...
 
-As it stands right now, the audio sounds the same as codec2, but the RAW output from ```c2dec``` has some different bytes. Just a few bytes here and there. They seem to be off by 1 when they are wrong.
+As it stands right now, the audio sounds the same as codec2, but the RAW output from ```c2dec``` has some different bytes. Just a few bytes here and there. They seem to be off by 1 bit when they are wrong.
