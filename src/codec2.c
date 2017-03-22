@@ -19,7 +19,7 @@
 static void analyse_one_frame(MODEL *, short []);
 static void synthesise_one_frame(short [], MODEL *, COMP []);
 static void ear_protection(float in_out[], int n);
-static void make_analysis_window(kiss_fft_cfg, float [], COMP []);
+static void make_analysis_window(codec2_fft_cfg, float [], COMP []);
 static void make_synthesis_window(float []);
 static void codec2_encode_1300(unsigned char *, short []);
 static void codec2_decode_1300(short [], const unsigned char *, float);
@@ -351,7 +351,7 @@ static void ear_protection(float in_out[], int n) {
     }
 }
 
-static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) {
+static void make_analysis_window(codec2_fft_cfg fft_fwd_cfg, float w[], COMP W[]) {
     COMP wshift[FFT_SIZE];
     COMP temp;
     int i, j;
@@ -390,7 +390,7 @@ static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) 
         wshift[i].real = w[j];
     }
 
-    kiss_fft(fft_fwd_cfg, wshift, W);
+    codec2_fft(fft_fwd_cfg, wshift, W);
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
         temp.real = W[i].real;
