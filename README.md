@@ -3,17 +3,9 @@ A codec2 LPC-10 1300 bps Speech Vocoder
 
 The purpose of this version of the vocoder, is to break out the encoder and decoder parts into separate directories, and to delete the other modes.
 
-The files were grouped using Netbeans, and compiled in Release mode. For the Ubuntu 64-bit I got the following size for the dynamic library:
-```
-   text	   data	    bss	    dec	    hex	filename
-  30858	   1416	  11984	  44258	   ace2	libcodec1300.so
-```
-For Raspberry Pi 2 B+ I get:
-```
-   text	   data	    bss	    dec	    hex	filename
-  23238	    760	  11780	  35778	   8bc2	libcodec1300.so
-```
-If you burst the ZIP file it will create all the directories, and you can just type ```make``` and it will build the library. I used -O2 for optimization.
+The files were grouped using Netbeans, and compiled in Release mode.
+
+If you burst the ZIP file it will create all the directories, and you can just type ```make``` and it will build the library. I used -O2 for optimization. This can be used, for example on Raspberry Pi devices. It's main use is for import into Netbeans.
 
 #### Design Change
 I'm an old geezer, so I like to see my data in the BSS section, rather then allocated into RAM using malloc. So you will notice that right off the bat, as there is an API change where you don't have to worry about the malloc pointer.
