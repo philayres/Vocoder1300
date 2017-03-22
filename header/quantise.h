@@ -30,14 +30,14 @@ int lsp_bits_decode(int);
 void aks_to_M2(kiss_fft_cfg, float [], int, MODEL *, float, float *, int, int, int, float, float, COMP []);
 int encode_Wo(float, int);
 float decode_Wo(int, int);
-void encode_lsps_scalar(int [], float [], int);
+float encode_lsps_scalar(int [], float [], int);
 void decode_lsps_scalar(float [], int [], int);
 int encode_energy(float, int);
 float decode_energy(int, int);
 void pack_natural_or_gray(unsigned char *, unsigned int *, int, unsigned int, unsigned int);
 int unpack_natural_or_gray(const unsigned char *, unsigned int *, unsigned int, unsigned int);
 float speech_to_uq_lsps(float [], float [], float [], float [], int);
-int check_lsp_order(float [], int);
+void check_lsp_order(float [], int);
 void bw_expand_lsps(float [], int, float, float);
 
 #endif

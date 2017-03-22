@@ -81,7 +81,7 @@ static float post_process_sub_multiples(COMP [], float, int, float *);
 int nlp_create(int m) {
     int i;
 
-    bss_m = m;
+    bss_m = m;  /* 320 samples */
 
     for (i = 0; i < m / DEC; i++) {
         bss_w[i] = 0.5f - 0.5f * cosf(2 * M_PI * i / (m / DEC - 1));
@@ -104,77 +104,74 @@ void nlp_destroy(void) {
 }
 
 static float post_process_sub_multiples(COMP Fw[], float gmax, int gmax_bin, float *prev_Wo) {
-    int min_bin, cmax_bin;
-    int mult;
-    float thresh, best_f0;
+    float thresh, lmax;
     int b, bmin, bmax, lmax_bin;
-    float lmax;
-    int prev_f0_bin;
 
-    mult = 2;
-    min_bin = FFT_SIZE * DEC / P_MAX;
-    cmax_bin = gmax_bin;
-    prev_f0_bin = *prev_Wo * (4000.0f / M_PI)*(FFT_SIZE * DEC) / SAMPLE_RATE;
+    int mult = 2;
+    int min_bin = FFT_SIZE * DEC / P_MAX;
+    int cmax_bin = gmax_bin;
+    int prev_f0_bin = (int) (*prev_Wo * (4000.0f / M_PI) * (float)(FFT_SIZE * DEC) / (float)SAMPLE_RATE);
 
     while (gmax_bin / mult >= min_bin) {
-
         b = gmax_bin / mult; /* determine search interval */
         bmin = 0.8f * b;
         bmax = 1.2f * b;
-        if (bmin < min_bin)
+        
+        if (bmin < min_bin) {
             bmin = min_bin;
+        }
 
-        /* lower threshold to favour previous frames pitch estimate,
+        /* lower threshold to favor previous frames pitch estimate,
             this is a form of pitch tracking */
 
-        if ((prev_f0_bin > bmin) && (prev_f0_bin < bmax))
+        if ((prev_f0_bin > bmin) && (prev_f0_bin < bmax)) {
             thresh = CNLP * 0.5f * gmax;
-        else
+        } else {
             thresh = CNLP * gmax;
+        }
 
         lmax = 0;
         lmax_bin = bmin;
-        
-        for (b = bmin; b <= bmax; b++) /* look for maximum in interval */
+
+        for (b = bmin; b <= bmax; b++) { /* look for maximum in interval */
             if (Fw[b].real > lmax) {
                 lmax = Fw[b].real;
                 lmax_bin = b;
             }
+        }
 
-        if (lmax > thresh)
+        if (lmax > thresh) {
             if ((lmax > Fw[lmax_bin - 1].real) && (lmax > Fw[lmax_bin + 1].real)) {
                 cmax_bin = lmax_bin;
             }
+        }
 
         mult++;
     }
 
-    best_f0 = (float) cmax_bin * SAMPLE_RATE / (FFT_SIZE * DEC);
-
-    return best_f0;
+    return (float) cmax_bin * (float) SAMPLE_RATE / (float) (FFT_SIZE * DEC);
 }
 
 float nlp(
         float Sn[], /* input speech vector */
         float *pitch, /* estimated pitch period in samples */
-        COMP Sw[], /* Freq domain version of Sn[] */
-        COMP W[], /* Freq domain window */
         float *prev_Wo
         ) {
     float notch; /* current notch filter output    */
     COMP fw[FFT_SIZE]; /* DFT of squared signal (input)  */
     COMP Fw[FFT_SIZE]; /* DFT of squared signal (output) */
-    float gmax;
-    int gmax_bin;
-    int i, j;
-    float best_f0;
+    float gmax, best_f0;
+    int i, j, gmax_bin;
 
     /* Square, notch filter at DC, and LP filter vector */
 
-    for (i = bss_m - N; i < bss_m; i++) /* square latest speech samples */
-        bss_sq[i] = Sn[i] * Sn[i];
+    for (i = bss_m - N; i < bss_m; i++) { /* square latest speech samples (240 to 320) */
+        bss_sq[i] = (Sn[i] * Sn[i]);
+    }
 
-    for (i = bss_m - N; i < bss_m; i++) { /* notch filter at DC */
+    /* notch filter at DC */
+    
+    for (i = bss_m - N; i < bss_m; i++) { 
         notch = bss_sq[i] - bss_mem_x;
         notch += COEFF * bss_mem_y;
         bss_mem_x = bss_sq[i];
@@ -183,32 +180,35 @@ float nlp(
     }
 
     for (i = bss_m - N; i < bss_m; i++) { /* FIR filter vector */
-        for (j = 0; j < NLP_NTAP - 1; j++)
+        for (j = 0; j < NLP_NTAP - 1; j++) {
             bss_mem_fir[j] = bss_mem_fir[j + 1];
+        }
 
         bss_mem_fir[NLP_NTAP - 1] = bss_sq[i];
 
         bss_sq[i] = 0.0f;
 
-        for (j = 0; j < NLP_NTAP; j++)
+        for (j = 0; j < NLP_NTAP; j++) {
             bss_sq[i] += bss_mem_fir[j] * nlp_fir[j];
+        }
     }
-
-    /* Decimate and DFT */
 
     for (i = 0; i < FFT_SIZE; i++) {
         fw[i].real = 0.0f;
         fw[i].imag = 0.0f;
     }
-
-    for (i = 0; i < bss_m / DEC; i++) {
+    
+    /* Decimate by 5 and DFT */
+    
+    for (i = 0; i < bss_m / DEC; i++) {         /* 320 / 5 = 64 */
         fw[i].real = bss_sq[i * DEC] * bss_w[i];
     }
 
     kiss_fft(bss_fft_cfg, (COMP *) fw, (COMP *) Fw);
 
-    for (i = 0; i < FFT_SIZE; i++)
+    for (i = 0; i < FFT_SIZE; i++) {
         Fw[i].real = Fw[i].real * Fw[i].real + Fw[i].imag * Fw[i].imag;
+    }
 
     /* find global peak */
 
@@ -226,8 +226,9 @@ float nlp(
 
     /* Shift samples in buffer to make room for new samples */
 
-    for (i = 0; i < bss_m - N; i++)
+    for (i = 0; i < bss_m - N; i++) {
         bss_sq[i] = bss_sq[i + N];
+    }
 
     /* return pitch and F0 estimate */
 

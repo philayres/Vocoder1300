@@ -33,7 +33,6 @@ MODEL bss_prev_model_dec; /* previous frame's model parameters         */
 kiss_fft_cfg bss_fft_fwd_cfg; /* forward FFT config                        */
 kiss_fft_cfg bss_fft_inv_cfg; /* inverse FFT config                        */
 COMP bss_W[FFT_SIZE]; /* DFT of w[]                                */
-float *bss_softdec; /* optional soft decn bits from demod        */
 float bss_w[M]; /* time domain hamming window                */
 float bss_Pn[2 * N]; /* trapezoidal synthesis window              */
 float bss_Sn[M]; /* input speech                              */
@@ -45,19 +44,21 @@ float bss_prev_lsps_dec[LPC_ORD]; /* previous frame's LSPs                     *
 float bss_prev_e_dec; /* previous frame's LPC energy               */
 float bss_beta; /* LPC post filter parameters                */
 float bss_gamma;
+float bss_se;
 int bss_gray; /* non-zero for gray encoding                */
 int bss_lpc_pf; /* LPC post filter on                        */
 int bss_bass_boost; /* LPC post filter bass boost                */
-int bss_smoothing; /* enable smoothing for channels with errors */
 
 int codec2_create() {
     int i, l;
 
-    for (i = 0; i < M; i++)
+    for (i = 0; i < M; i++) {
         bss_Sn[i] = 1.0f;
-
-    for (i = 0; i < 2 * N; i++)
+    }
+    
+    for (i = 0; i < (N * 2); i++) {
         bss_Sn_[i] = 0.0f;
+    }
 
     bss_fft_fwd_cfg = kiss_fft_alloc(FFT_SIZE, 0, NULL, NULL);
 
@@ -69,9 +70,11 @@ int codec2_create() {
     bss_prev_Wo_enc = 0.0f;
     bss_bg_est = 0.0f;
     bss_ex_phase = 0.0f;
+    bss_se = 0.0f;
 
-    for (l = 1; l <= MAX_AMP; l++)
+    for (l = 1; l <= MAX_AMP; l++) {
         bss_prev_model_dec.A[l] = 0.0f;
+    }
 
     bss_prev_model_dec.Wo = TAU / P_MAX;
     bss_prev_model_dec.L = M_PI / bss_prev_model_dec.Wo;
@@ -81,7 +84,7 @@ int codec2_create() {
         bss_prev_lsps_dec[i] = i * M_PI / (LPC_ORD + 1);
     }
 
-    bss_prev_e_dec = 1;
+    bss_prev_e_dec = 1.0f;
 
     if (nlp_create(M) == 0) {
         return 0;
@@ -90,10 +93,9 @@ int codec2_create() {
     bss_gray = 1;
     bss_lpc_pf = 1;
     bss_bass_boost = 1;
+
     bss_beta = LPCPF_BETA;
     bss_gamma = LPCPF_GAMMA;
-    bss_smoothing = 0;
-    bss_softdec = NULL;
 
     return 1;
 }
@@ -124,13 +126,53 @@ void codec2_decode_ber(short speech[], const unsigned char *bits, float ber_est)
     codec2_decode_1300(speech, bits, ber_est);
 }
 
+float codec2_get_energy(const unsigned char *bits) {
+    unsigned int nbit = 1 + 1 + 1 + 1 + WO_BITS;
+    int e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
+
+    return decode_energy(e_index, E_BITS);
+}
+
+float codec2_get_sum_beste() {
+    return bss_se;
+}
+
+void codec2_set_lpc_post_filter(int enable, int bass_boost, float beta, float gamma) {
+    bss_lpc_pf = enable;
+    bass_boost = bass_boost;
+    bss_beta = beta;
+    bss_gamma = gamma;
+}
+
+/*
+ * Allows optional stealing of one of the voicing bits
+ * for use as a spare bit
+ */
+
+int codec2_get_spare_bit_index() {
+    return 2;
+}
+
+int codec2_rebuild_spare_bit(int unpacked_bits[]) {
+    int v1 = unpacked_bits[1];
+    int v3 = unpacked_bits[1 + 1 + 1];
+
+    /* if either adjacent frame is voiced, make this one voiced */
+
+    unpacked_bits[2] = (v1 || v3);
+
+    return 0;
+}
+
+void codec2_set_natural_or_gray(int gray) {
+    bss_gray = gray;
+}
+
 static void codec2_encode_1300(unsigned char * bits, short speech[]) {
     MODEL model;
     float lsps[LPC_ORD];
     float ak[LPC_ORD + 1];
-    float e;
     int lsp_indexes[LPC_ORD];
-    int Wo_index, e_index;
     int i;
     unsigned int nbit = 0;
 
@@ -148,14 +190,14 @@ static void codec2_encode_1300(unsigned char * bits, short speech[]) {
     analyse_one_frame(&model, &speech[3 * N]);
     pack_natural_or_gray(bits, &nbit, model.voiced, 1, bss_gray);
 
-    Wo_index = encode_Wo(model.Wo, WO_BITS);
+    int Wo_index = encode_Wo(model.Wo, WO_BITS);
     pack_natural_or_gray(bits, &nbit, Wo_index, WO_BITS, bss_gray);
 
-    e = speech_to_uq_lsps(lsps, ak, bss_Sn, bss_w, LPC_ORD);
-    e_index = encode_energy(e, E_BITS);
+    float e = speech_to_uq_lsps(lsps, ak, bss_Sn, bss_w, LPC_ORD);
+    int e_index = encode_energy(e, E_BITS);
     pack_natural_or_gray(bits, &nbit, e_index, E_BITS, bss_gray);
 
-    encode_lsps_scalar(lsp_indexes, lsps, LPC_ORD);
+    bss_se = encode_lsps_scalar(lsp_indexes, lsps, LPC_ORD);
 
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
         pack_natural_or_gray(bits, &nbit, lsp_indexes[i], lsp_bits_encode(i), bss_gray);
@@ -164,31 +206,31 @@ static void codec2_encode_1300(unsigned char * bits, short speech[]) {
 
 static void codec2_decode_1300(short speech[], const unsigned char * bits, float ber_est) {
     MODEL model[4];
-    int lsp_indexes[LPC_ORD];
+    COMP Aw[FFT_SIZE];
     float lsps[4][LPC_ORD];
-    int Wo_index, e_index;
-    float e[4];
-    float snr;
     float ak[4][LPC_ORD + 1];
+    int lsp_indexes[LPC_ORD];
+    float e[4];
+    float snr, weight;
     int i, j;
     unsigned int nbit = 0;
-    float weight;
-    COMP Aw[FFT_SIZE];
 
-    for (i = 0; i < 4; i++)
-        for (j = 1; j <= MAX_AMP; j++)
+    for (i = 0; i < 4; i++) {
+        for (j = 1; j <= MAX_AMP; j++) {
             model[i].A[j] = 0.0f;
+        }
+    }
 
     model[0].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
     model[1].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
     model[2].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
     model[3].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
 
-    Wo_index = unpack_natural_or_gray(bits, &nbit, WO_BITS, bss_gray);
+    int Wo_index = unpack_natural_or_gray(bits, &nbit, WO_BITS, bss_gray);
     model[3].Wo = decode_Wo(Wo_index, WO_BITS);
     model[3].L = M_PI / model[3].Wo;
 
-    e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
+    int e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
     e[3] = decode_energy(e_index, E_BITS);
 
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
@@ -222,15 +264,9 @@ static void codec2_decode_1300(short speech[], const unsigned char * bits, float
     bss_prev_model_dec = model[3];
     bss_prev_e_dec = e[3];
 
-    for (i = 0; i < LPC_ORD; i++)
+    for (i = 0; i < LPC_ORD; i++) {
         bss_prev_lsps_dec[i] = lsps[3][i];
-}
-
-float codec2_get_energy(const unsigned char *bits) {
-    unsigned int nbit = 1 + 1 + 1 + 1 + WO_BITS;
-    int e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
-
-    return decode_energy(e_index, E_BITS);
+    }
 }
 
 static void synthesise_one_frame(short speech[], MODEL *model, COMP Aw[]) {
@@ -242,101 +278,77 @@ static void synthesise_one_frame(short speech[], MODEL *model, COMP Aw[]) {
     ear_protection(bss_Sn_, N);
 
     for (i = 0; i < N; i++) {
-        if (bss_Sn_[i] > 32767.0f)
+        if (bss_Sn_[i] > 32767.0f) {
             speech[i] = 32767;
-        else if (bss_Sn_[i] < -32767.0f)
+        } else if (bss_Sn_[i] < -32767.0f) {
             speech[i] = -32767;
-        else
+        } else {
             speech[i] = bss_Sn_[i];
+        }
     }
 }
 
 static void analyse_one_frame(MODEL *model, short speech[]) {
     COMP Sw[FFT_SIZE];
-    COMP Sw_[FFT_SIZE];
-    COMP Ew[FFT_SIZE];
     float pitch;
     int i;
 
-    /* Read input speech */
+    /* Shift the old amplitude samples left 80 samples */
 
-    for (i = 0; i < M - N; i++)
+    for (i = 0; i < M - N; i++) {
         bss_Sn[i] = bss_Sn[i + N];
+    }
+    
+    /* Add the new 80 amplitude samples to the end */
 
-    for (i = 0; i < N; i++)
-        bss_Sn[i + M - N] = speech[i];
-
+    for (i = 0; i < N; i++) {
+        bss_Sn[i + M - N] = (float) speech[i];
+    }
+    
+    /*
+     * Hamming filter (Sn) * (w) and convert to Frequency Domain (Sw)
+     */
     dft_speech(bss_fft_fwd_cfg, Sw, bss_Sn, bss_w);
 
-    /* Estimate pitch */
+    /*
+     * Estimate pitch (Sn)
+     */
 
-    nlp(bss_Sn, &pitch, Sw, bss_W, &bss_prev_Wo_enc);
+    nlp(bss_Sn, &pitch, &bss_prev_Wo_enc);
 
     model->Wo = TAU / pitch;
     model->L = M_PI / model->Wo;
 
-    /* estimate model parameters */
+    /* estimate/refine model parameters and voicing */
 
     two_stage_pitch_refinement(model, Sw);
     estimate_amplitudes(model, Sw, bss_W, 0);
-    est_voicing_mbe(model, Sw, bss_W, Sw_, Ew);
+    est_voicing_mbe(model, Sw, bss_W);
+    
     bss_prev_Wo_enc = model->Wo;
 }
 
 static void ear_protection(float in_out[], int n) {
-    float max_sample, over, gain;
+    float gain;
     int i;
 
-    max_sample = 0.0f;
+    float max_sample = 0.0f;
 
-    for (i = 0; i < n; i++)
-        if (in_out[i] > max_sample)
+    for (i = 0; i < n; i++) {
+        if (in_out[i] > max_sample) {
             max_sample = in_out[i];
+        }
+    }
 
-    over = max_sample / 30000.0f;
+    float over = max_sample / 30000.0f;
 
     if (over > 1.0f) {
         gain = 1.0f / (over * over);
 
-        for (i = 0; i < n; i++)
+        for (i = 0; i < n; i++) {
             in_out[i] *= gain;
+        }
     }
-}
-
-void codec2_set_lpc_post_filter(int enable, int bass_boost, float beta, float gamma) {
-    bss_lpc_pf = enable;
-    bass_boost = bass_boost;
-    bss_beta = beta;
-    bss_gamma = gamma;
-}
-
-/*
-   Allows optional stealing of one of the voicing bits for use as a
-   spare bit, only 1300 & 1400 & 1600 bit/s supported for now.
-   Experimental method of sending voice/data frames for FreeDV.
- */
-
-int codec2_get_spare_bit_index() {
-    return 2;
-}
-
-int codec2_rebuild_spare_bit(int unpacked_bits[]) {
-    int v1 = unpacked_bits[1];
-    int v3 = unpacked_bits[1 + 1 + 1];
-
-    /* if either adjacent frame is voiced, make this one voiced */
-
-    unpacked_bits[2] = (v1 || v3);
-
-    return 0;
-}
-
-void codec2_set_natural_or_gray(int gray) {
-    gray = gray;
-}
-
-void codec2_set_softdec(float *softdec) {
-    softdec = softdec;
 }
 
 static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) {
@@ -346,16 +358,18 @@ static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) 
 
     float m = 0.0f;
 
-    for (i = 0; i < (M / 2 - NW / 2); i++)
+    for (i = 0; i < (M / 2 - NW / 2); i++) {
         w[i] = 0.0f;
+    }
 
     for (i = (M / 2 - NW / 2), j = 0; i < (M / 2 + NW / 2); i++, j++) {
         w[i] = 0.5f - 0.5f * cosf(TAU * j / (NW - 1));
         m += w[i] * w[i];
     }
 
-    for (i = (M / 2 + NW / 2); i < M; i++)
+    for (i = (M / 2 + NW / 2); i < M; i++) {
         w[i] = 0.0f;
+    }
 
     m = 1.0f / sqrtf(m * FFT_SIZE);
 
@@ -368,11 +382,13 @@ static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) 
         wshift[i].imag = 0.0f;
     }
 
-    for (i = 0; i < (NW / 2); i++)
+    for (i = 0; i < (NW / 2); i++) {
         wshift[i].real = w[i + M / 2];
+    }
 
-    for (i = (FFT_SIZE - NW / 2), j = (M / 2 - NW / 2); i < FFT_SIZE; i++, j++)
+    for (i = (FFT_SIZE - NW / 2), j = (M / 2 - NW / 2); i < FFT_SIZE; i++, j++) {
         wshift[i].real = w[j];
+    }
 
     kiss_fft(fft_fwd_cfg, (COMP *) wshift, (COMP *) W);
 
@@ -389,24 +405,31 @@ static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) 
 }
 
 static void make_synthesis_window(float Pn[]) {
-    float win;
     int i;
 
-    win = 0.0f;
-    for (i = 0; i < N / 2 - TW; i++)
+    float win = 0.0f;
+    
+    for (i = 0; i < N / 2 - TW; i++) {
         Pn[i] = 0.0f;
-
+    }
+    
     win = 0.0f;
-    for (i = N / 2 - TW; i < N / 2 + TW; win += 1.0 / (2 * TW), i++)
+    
+    for (i = N / 2 - TW; i < N / 2 + TW; win += 1.0 / (2 * TW), i++) {
         Pn[i] = win;
+    }
 
-    for (i = N / 2 + TW; i < 3 * N / 2 - TW; i++)
+    for (i = N / 2 + TW; i < 3 * N / 2 - TW; i++) {
         Pn[i] = 1.0f;
+    }
 
     win = 1.0f;
-    for (i = 3 * N / 2 - TW; i < 3 * N / 2 + TW; win -= 1.0f / (2 * TW), i++)
-        Pn[i] = win;
 
-    for (i = 3 * N / 2 + TW; i < 2 * N; i++)
+    for (i = 3 * N / 2 - TW; i < 3 * N / 2 + TW; win -= 1.0f / (2 * TW), i++) {
+        Pn[i] = win;
+    }
+
+    for (i = 3 * N / 2 + TW; i < 2 * N; i++) {
         Pn[i] = 0.0f;
+    }
 }

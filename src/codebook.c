@@ -230,6 +230,5 @@ const struct lsp_codebook lsp_cb[] = {
         2,
         4,
         codes9
-    },
-    { 0, 0, 0, 0}
+    }
 };

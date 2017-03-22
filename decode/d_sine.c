@@ -15,9 +15,9 @@
 #include "kiss_fft.h"
 
 void synthesise(kiss_fft_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[], int shift) {
-    int i, l, j, b;
     COMP Sw_[FFT_SIZE];
     COMP sw_[FFT_SIZE];
+    int i, l, j, b;
 
     if (shift) {
         /* Update memories */
@@ -58,10 +58,13 @@ void synthesise(kiss_fft_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[],
         Sn_[i] += sw_[FFT_SIZE - N + 1 + i].real * Pn[i];
     }
 
-    if (shift)
-        for (i = N - 1, j = 0; i < 2 * N; i++, j++)
+    if (shift) {
+        for (i = N - 1, j = 0; i < 2 * N; i++, j++) {
             Sn_[i] = sw_[j].real * Pn[i];
-    else
-        for (i = N - 1, j = 0; i < 2 * N; i++, j++)
+        }
+    } else {
+        for (i = N - 1, j = 0; i < 2 * N; i++, j++) {
             Sn_[i] += sw_[j].real * Pn[i];
+        }
+    }
 }

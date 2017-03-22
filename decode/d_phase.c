@@ -46,11 +46,9 @@ void phase_synth_zero_order(MODEL *model, float *ex_phase, COMP A[]) {
         /* generate excitation */
 
         if (model->voiced) {
-
             Ex[m].real = cosf(ex_phase[0] * m);
             Ex[m].imag = sinf(ex_phase[0] * m);
         } else {
-
             /* When a few samples were tested I found that LPC filter
                phase is not needed in the unvoiced case, but no harm in
                keeping it.

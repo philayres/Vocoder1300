@@ -13,7 +13,7 @@
 
 int nlp_create(int);
 void nlp_destroy(void);
-float nlp(float [], float *, COMP [], COMP [], float *);
+float nlp(float [], float *, float *);
 
 #define PMAX_M      600		/* maximum NLP analysis window size     */
 #define COEFF       0.95	/* notch filter parameter               */

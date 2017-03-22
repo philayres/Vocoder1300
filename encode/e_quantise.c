@@ -25,11 +25,12 @@ int lsp_bits_encode(int i) {
 static void autocorrelate(float Sn[], float Rn[], int Nsam, int order) {
     int i, j;
 
-    for (j = 0; j < order + 1; j++) {
+    for (j = 0; j < (order + 1); j++) {
         Rn[j] = 0.0f;
 
-        for (i = 0; i < Nsam - j; i++)
+        for (i = 0; i < (Nsam - j); i++) {
             Rn[j] += Sn[i] * Sn[i + j];
+        }
     }
 }
 
@@ -43,7 +44,7 @@ static void levinson_durbin(float R[], float lpcs[], int order) {
     for (i = 1; i <= order; i++) {
         sum = 0.0f;
 
-        for (j = 1; j <= i - 1; j++)
+        for (j = 1; j <= (i - 1); j++)
             sum += a[i - 1][j] * R[i - j];
 
         k = -1.0 * (R[i] + sum) / e;
@@ -53,7 +54,7 @@ static void levinson_durbin(float R[], float lpcs[], int order) {
 
         a[i][i] = k;
 
-        for (j = 1; j <= i - 1; j++)
+        for (j = 1; j <= (i - 1); j++)
             a[i][j] = a[i - 1][j] + k * a[i - 1][i - j];
 
         e *= (1 - k * k);
@@ -66,9 +67,9 @@ static void levinson_durbin(float R[], float lpcs[], int order) {
 }
 
 static float cheb_poly_eva(float *coef, float x, int order) {
-    int i;
-    float *t, *u, *v, sum;
     float T[(order / 2) + 1];
+    float *t, *u, *v;
+    int i;
 
     t = T;
     *t++ = 1.0f;
@@ -76,21 +77,22 @@ static float cheb_poly_eva(float *coef, float x, int order) {
     *u++ = x;
     v = u--;
 
-    for (i = 2; i <= order / 2; i++)
+    for (i = 2; i <= (order / 2); i++) {
         *v++ = (2.0f * x)*(*u++) - *t++;
+    }
 
-    sum = 0.0f;
+    float sum = 0.0f;
     t = T;
 
-    for (i = 0; i <= order / 2; i++)
+    for (i = 0; i <= (order / 2); i++) {
         sum += coef[(order / 2) - i]**t++;
+    }
 
     return sum;
 }
 
-int quantise(const float * cb, float vec[], float w[], int k, int m, float *se) {
-    float e;
-    float diff;
+int quantise(const float *cb, float vec[], float w[], int k, int m, float *se) {
+    float e, diff;
     int i, j;
 
     int besti = 0;
@@ -116,27 +118,26 @@ int quantise(const float * cb, float vec[], float w[], int k, int m, float *se) 
 }
 
 int encode_Wo(float Wo, int bits) {
-    int index, Wo_levels = 1 << bits;
     float Wo_min = (TAU / P_MAX);
     float Wo_max = (TAU / P_MIN);
-    float norm;
+    int Wo_levels = 1 << bits;
 
-    norm = (Wo - Wo_min) / (Wo_max - Wo_min);
-    index = floorf(Wo_levels * norm + 0.5f);
+    float norm = (Wo - Wo_min) / (Wo_max - Wo_min);
+    int index = floorf(Wo_levels * norm + 0.5f);
 
-    if (index < 0)
+    if (index < 0) {
         index = 0;
-
-    if (index > (Wo_levels - 1))
+    } else if (index > (Wo_levels - 1)) {
         index = Wo_levels - 1;
+    }
 
     return index;
 }
 
 float speech_to_uq_lsps(float lsp[], float ak[], float Sn[], float w[], int order) {
-    int i, roots;
     float Wn[M];
     float R[order + 1];
+    int i;
 
     float e = 0.0f;
 
@@ -146,8 +147,9 @@ float speech_to_uq_lsps(float lsp[], float ak[], float Sn[], float w[], int orde
     }
 
     if (e == 0.0f) {
-        for (i = 0; i < order; i++)
+        for (i = 0; i < order; i++) {
             lsp[i] = (M_PI / order) * (float) i;
+        }
 
         return 0.0f;
     }
@@ -157,17 +159,20 @@ float speech_to_uq_lsps(float lsp[], float ak[], float Sn[], float w[], int orde
 
     float E = 0.0f;
 
-    for (i = 0; i <= order; i++)
+    for (i = 0; i <= order; i++) {
         E += ak[i] * R[i];
+    }
 
-    for (i = 0; i <= order; i++)
+    for (i = 0; i <= order; i++) {
         ak[i] *= powf(0.994f, (float) i);
+    }
 
-    roots = lpc_to_lsp(ak, order, lsp, 5, LSP_DELTA);
+    int roots = lpc_to_lsp(ak, order, lsp, (order / 2), LSP_DELTA);
 
     if (roots != order) {
-        for (i = 0; i < order; i++)
+        for (i = 0; i < order; i++) {
             lsp[i] = (M_PI / order) * (float) i;
+        }
     }
 
     return E;
@@ -175,19 +180,14 @@ float speech_to_uq_lsps(float lsp[], float ak[], float Sn[], float w[], int orde
 
 int lpc_to_lsp(float *a, int order, float *freq, int nb, float delta) {
     float psuml, psumr, psumm, temp_xr, xl, xr, xm = 0;
-    float temp_psumr;
-    int i, j, m, flag, k;
-    float *px;
-    float *qx;
-    float *p;
-    float *q;
-    float *pt;
-    int roots = 0;
+    float temp_psumr, *px, *qx, *p, *q, *pt;
     float Q[order + 1];
     float P[order + 1];
+    int i, j, k;
 
-    flag = 1;
-    m = order / 2;
+    int flag = 1;
+    int m = order / 2;
+    int roots = 0;
     
     /* Allocate memory space for polynomials */
 
@@ -199,8 +199,8 @@ int lpc_to_lsp(float *a, int order, float *freq, int nb, float delta) {
     *qx++ = 1.0f;
     
     for (i = 1; i <= m; i++) {
-        *px++ = a[i] + a[order + 1 - i]-*p++;
-        *qx++ = a[i] - a[order + 1 - i]+*q++;
+        *px++ = a[i] + a[order + 1 - i] - *p++;
+        *qx++ = a[i] - a[order + 1 - i] + *q++;
     }
     
     px = P;
@@ -221,10 +221,11 @@ int lpc_to_lsp(float *a, int order, float *freq, int nb, float delta) {
 
 
     for (j = 0; j < order; j++) {
-        if (j % 2)
+        if (j % 2) {
             pt = qx;
-        else
+        } else {
             pt = px;
+        }
 
         psuml = cheb_poly_eva(pt, xl, order);
         flag = 1;
@@ -272,35 +273,34 @@ int lpc_to_lsp(float *a, int order, float *freq, int nb, float delta) {
 }
 
 int encode_energy(float e, int bits) {
-    int index, e_levels = 1 << bits;
     float e_min = E_MIN_DB;
     float e_max = E_MAX_DB;
-    float norm;
 
     e = 10.0f * log10f(e);
-    norm = (e - e_min) / (e_max - e_min);
-    index = floorf(e_levels * norm + 0.5f);
-
-    if (index < 0)
-        index = 0;
+    float norm = (e - e_min) / (e_max - e_min);
     
-    if (index > (e_levels - 1))
+    int e_levels = 1 << bits;
+    int index = floorf(e_levels * norm + 0.5f);
+
+    if (index < 0) {
+        index = 0;
+    } if (index > (e_levels - 1)) {
         index = e_levels - 1;
+    }
 
     return index;
 }
 
-void encode_lsps_scalar(int indexes[], float lsp[], int order) {
-    int i, k, m;
-    float wt[1];
+float encode_lsps_scalar(int indexes[], float lsp[], int order) {
+    float wt[1] = {1.0f};
     float lsp_hz[order];
     const float *cb;
     float se;
+    int i, k, m;
 
-    for (i = 0; i < order; i++)
+    for (i = 0; i < order; i++) {
         lsp_hz[i] = (4000.0f / M_PI) * lsp[i];
-
-    wt[0] = 1.0f;
+    }
     
     for (i = 0; i < order; i++) {
         k = lsp_cb[i].k;
@@ -308,5 +308,7 @@ void encode_lsps_scalar(int indexes[], float lsp[], int order) {
         cb = lsp_cb[i].cb;
         indexes[i] = quantise(cb, &lsp_hz[i], wt, k, m, &se);
     }
+    
+    return se;
 }
 

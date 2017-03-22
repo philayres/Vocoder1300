@@ -27,9 +27,10 @@ void postfilter(MODEL *model, float *bg_est) {
 
     float e = 1E-12f;
 
-    for (m = 1; m <= model->L; m++)
+    for (m = 1; m <= model->L; m++) {
         e += model->A[m] * model->A[m];
-
+    }
+    
     e = 10.0f * log10f(e / model->L);
 
     /* If beneath threshold, update bg estimate.  The idea

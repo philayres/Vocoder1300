@@ -71,21 +71,18 @@ void lsp_to_lpc(float *lsp, float *ak, int order) {
     }
 }
 
-int check_lsp_order(float lsp[], int order) {
+void check_lsp_order(float lsp[], int order) {
     float tmp;
-    int swaps = 0;
     int i;
 
-    for (i = 1; i < order; i++)
+    for (i = 1; i < order; i++) {
         if (lsp[i] < lsp[i - 1]) {
-            swaps++;
             tmp = lsp[i - 1];
             lsp[i - 1] = lsp[i] - 0.1f;
             lsp[i] = tmp + 0.1f;
             i = 1;
         }
-
-    return swaps;
+    }
 }
 
 static void lpc_post_filter(kiss_fft_cfg fft_fwd_cfg, COMP Pw[], float ak[],
