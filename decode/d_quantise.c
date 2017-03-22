@@ -6,15 +6,11 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 
 #include "defines.h"
+#include "kiss_fftr.h"
+#include "codec2_fft.h"
 #include "quantise.h"
-#include "kiss_fft.h"
 
 int lsp_bits_decode(int i) {
     return lsp_cb[i].log2m;
@@ -85,11 +81,11 @@ void check_lsp_order(float lsp[], int order) {
     }
 }
 
-static void lpc_post_filter(kiss_fft_cfg fft_fwd_cfg, COMP Pw[], float ak[],
+static void lpc_post_filter(kiss_fftr_cfg fft_fwd_cfg, float Pw[], float ak[],
         int order, float beta, float gamma, int bass_boost, float E) {
-    COMP x[FFT_SIZE];
-    COMP Ww[FFT_SIZE];
-    float Rw[FFT_SIZE];
+    COMP Ww[FFT_SIZE / 2 + 1];
+    float x[FFT_SIZE];
+    float Rw[FFT_SIZE / 2 + 1];
     float e_before, e_after, gain;
     float Pfw;
     float max_Rw, min_Rw;
@@ -97,19 +93,18 @@ static void lpc_post_filter(kiss_fft_cfg fft_fwd_cfg, COMP Pw[], float ak[],
     int i;
 
     for (i = 0; i < FFT_SIZE; i++) {
-        x[i].real = 0.0f;
-        x[i].imag = 0.0f;
+        x[i] = 0.0f;
     }
 
-    x[0].real = ak[0];
+    x[0] = ak[0];
     coeff = gamma;
 
     for (i = 1; i <= order; i++) {
-        x[i].real = ak[i] * coeff;
+        x[i] = ak[i] * coeff;
         coeff *= gamma;
     }
 
-    kiss_fft(fft_fwd_cfg, (COMP *) x, (COMP *) Ww);
+    codec2_fftr(fft_fwd_cfg, x, Ww);
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
         Ww[i].real = Ww[i].real * Ww[i].real + Ww[i].imag * Ww[i].imag;
@@ -119,7 +114,7 @@ static void lpc_post_filter(kiss_fft_cfg fft_fwd_cfg, COMP Pw[], float ak[],
     min_Rw = 1E32f;
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
-        Rw[i] = sqrtf(Ww[i].real * Pw[i].real);
+        Rw[i] = sqrtf(Ww[i].real * Pw[i]);
 
         if (Rw[i] > max_Rw)
             max_Rw = Rw[i];
@@ -131,64 +126,65 @@ static void lpc_post_filter(kiss_fft_cfg fft_fwd_cfg, COMP Pw[], float ak[],
 
     e_before = 1E-4f;
 
-    for (i = 0; i < (FFT_SIZE / 2); i++)
-        e_before += Pw[i].real;
+    for (i = 0; i < (FFT_SIZE / 2); i++) {
+        e_before += Pw[i];
+    }
 
     e_after = 1E-4f;
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
         Pfw = powf(Rw[i], beta);
-        Pw[i].real *= Pfw * Pfw;
-        e_after += Pw[i].real;
+        Pw[i] *= Pfw * Pfw;
+        e_after += Pw[i];
     }
 
     gain = e_before / e_after;
     gain *= E;
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
-        Pw[i].real *= gain;
+        Pw[i] *= gain;
     }
 
     if (bass_boost) {
         for (i = 0; i < FFT_SIZE / 8; i++) {
-            Pw[i].real *= 1.4f * 1.4f;
+            Pw[i] *= 1.4f * 1.4f;
         }
     }
 }
 
-void aks_to_M2(kiss_fft_cfg fft_fwd_cfg, float ak[], int order, MODEL *model,
+void aks_to_M2(codec2_fftr_cfg fftr_fwd_cfg, float ak[], int order, MODEL *model,
         float E, float *snr, int sim_pf, int pf, int bass_boost,
         float beta, float gamma, COMP Aw[]) {
-    COMP a[FFT_SIZE];
-    COMP Pw[FFT_SIZE];
-    float Em;
-    float Am;
-    int am, bm;
-    int i, m;
+    float Pw[FFT_SIZE / 2];
+    float a[FFT_SIZE];
+    float Em, Am;
+    int am, bm, i, m;
 
     float r = TAU / FFT_SIZE;
 
     for (i = 0; i < FFT_SIZE; i++) {
-        a[i].real = 0.0f;
-        a[i].imag = 0.0f;
-        Pw[i].real = 0.0f;
-        Pw[i].imag = 0.0f;
+        a[i] = 0.0f;
     }
 
-    for (i = 0; i <= order; i++)
-        a[i].real = ak[i];
+    for (i = 0; i < (FFT_SIZE / 2); i++) {
+        Pw[i] = 0.0f;
+    }
+
+    for (i = 0; i <= order; i++) {
+        a[i] = ak[i];
+    }
     
-    kiss_fft(fft_fwd_cfg, (COMP *) a, (COMP *) Aw);
+    codec2_fftr(fftr_fwd_cfg, a, Aw);
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
-        Pw[i].real = 1.0f / (Aw[i].real * Aw[i].real + Aw[i].imag * Aw[i].imag + 1E-6f);
+        Pw[i] = 1.0f / (Aw[i].real * Aw[i].real + Aw[i].imag * Aw[i].imag + 1E-6f);
     }
 
     if (pf) {
-        lpc_post_filter(fft_fwd_cfg, Pw, ak, order, beta, gamma, bass_boost, E);
+        lpc_post_filter(fftr_fwd_cfg, Pw, ak, order, beta, gamma, bass_boost, E);
     } else {
-        for (i = 0; i < FFT_SIZE; i++) {
-            Pw[i].real *= E;
+        for (i = 0; i < (FFT_SIZE / 2); i++) {
+            Pw[i] *= E;
         }
     }
 
@@ -201,12 +197,12 @@ void aks_to_M2(kiss_fft_cfg fft_fwd_cfg, float ak[], int order, MODEL *model,
         Em = 0.0f;
 
         for (i = am; i < bm; i++)
-            Em += Pw[i].real;
+            Em += Pw[i];
 
         Am = sqrtf(Em);
 
-        signal += model->A[m] * model->A[m];
-        noise += (model->A[m] - Am)*(model->A[m] - Am);
+        signal += (model->A[m] * model->A[m]);
+        noise += ((model->A[m] - Am) * (model->A[m] - Am));
 
         if (sim_pf) {
             if (Am > model->A[m])
@@ -241,21 +237,24 @@ void decode_lsps_scalar(float lsp[], int indexes[], int order) {
         lsp_hz[i] = cb[indexes[i] * k];
     }
 
-    for (i = 0; i < order; i++)
+    for (i = 0; i < order; i++) {
         lsp[i] = (M_PI / 4000.0f) * lsp_hz[i];
+    }
 }
 
 void bw_expand_lsps(float lsp[], int order, float min_sep_low, float min_sep_high) {
     int i;
 
     for (i = 1; i < 4; i++) {
-        if ((lsp[i] - lsp[i - 1]) < min_sep_low * (M_PI / 4000.0f))
+        if ((lsp[i] - lsp[i - 1]) < min_sep_low * (M_PI / 4000.0f)) {
             lsp[i] = lsp[i - 1] + min_sep_low * (M_PI / 4000.0f);
+        }
     }
 
     for (i = 4; i < order; i++) {
-        if (lsp[i] - lsp[i - 1] < min_sep_high * (M_PI / 4000.0f))
+        if (lsp[i] - lsp[i - 1] < min_sep_high * (M_PI / 4000.0f)) {
             lsp[i] = lsp[i - 1] + min_sep_high * (M_PI / 4000.0f);
+        }
     }
 }
 

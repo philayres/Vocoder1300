@@ -9,8 +9,14 @@
 #ifndef __QUANTISE__
 #define __QUANTISE__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "comp.h"
 #include "kiss_fft.h"
+#include "kiss_fftr.h"
 
 #define WO_BITS     7
 #define WO_LEVELS   (1<<WO_BITS)
@@ -27,7 +33,7 @@ void lsp_to_lpc(float *, float *, int);
 void apply_lpc_correction(MODEL *);
 int lsp_bits_encode(int);
 int lsp_bits_decode(int);
-void aks_to_M2(kiss_fft_cfg, float [], int, MODEL *, float, float *, int, int, int, float, float, COMP []);
+void aks_to_M2(kiss_fftr_cfg, float [], int, MODEL *, float, float *, int, int, int, float, float, COMP []);
 int encode_Wo(float, int);
 float decode_Wo(int, int);
 float encode_lsps_scalar(int [], float [], int);
@@ -40,4 +46,7 @@ float speech_to_uq_lsps(float [], float [], float [], float [], int);
 void check_lsp_order(float [], int);
 void bw_expand_lsps(float [], int, float, float);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

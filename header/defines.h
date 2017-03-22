@@ -9,6 +9,10 @@
 #ifndef __DEFINES__
 #define __DEFINES__
 
+#ifdef __cplusplus
+  extern "C" {
+#endif
+      
 #ifndef M_PI
 #define M_PI    3.14159265358979323846f
 #endif
@@ -60,4 +64,7 @@ struct lsp_codebook
 
 extern const struct lsp_codebook lsp_cb[];
 
+#ifdef __cplusplus
+}
+#endif
 #endif

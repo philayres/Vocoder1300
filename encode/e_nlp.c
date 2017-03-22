@@ -6,12 +6,11 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <math.h>
-#include <stdlib.h>
 
 #include "defines.h"
 #include "nlp.h"
 #include "kiss_fft.h"
+#include "codec2_fft.h"
 
 /* BSS Storage */
 
@@ -21,7 +20,7 @@ static float bss_sq[PMAX_M];            /* squared speech samples       */
 static float bss_mem_x;
 static float bss_mem_y;                 /* memory for notch filter      */
 static float bss_mem_fir[NLP_NTAP];     /* decimation FIR filter memory */
-static kiss_fft_cfg bss_fft_cfg;        /* kiss FFT config              */
+static codec2_fft_cfg bss_fft_cfg;        /* kiss FFT config              */
 
 /* 48 tap 600Hz low pass FIR filter coefficients */
 
@@ -90,7 +89,7 @@ int nlp_create(int m) {
     bss_mem_x = 0.0f;
     bss_mem_y = 0.0f;
 
-    bss_fft_cfg = kiss_fft_alloc(FFT_SIZE, 0, NULL, NULL);
+    bss_fft_cfg = codec2_fft_alloc(FFT_SIZE, 0, NULL, NULL);
 
     if (bss_fft_cfg == NULL) {
         return 0;
@@ -100,7 +99,7 @@ int nlp_create(int m) {
 }
 
 void nlp_destroy(void) {
-    free(bss_fft_cfg);
+    codec2_fft_free(bss_fft_cfg);
 }
 
 static float post_process_sub_multiples(COMP Fw[], float gmax, int gmax_bin, float *prev_Wo) {
@@ -160,7 +159,7 @@ float nlp(
     float notch; /* current notch filter output    */
     COMP fw[FFT_SIZE]; /* DFT of squared signal (input)  */
     COMP Fw[FFT_SIZE]; /* DFT of squared signal (output) */
-    float gmax, best_f0;
+    float gmax;
     int i, j, gmax_bin;
 
     /* Square, notch filter at DC, and LP filter vector */
@@ -204,7 +203,7 @@ float nlp(
         fw[i].real = bss_sq[i * DEC] * bss_w[i];
     }
 
-    kiss_fft(bss_fft_cfg, (COMP *) fw, (COMP *) Fw);
+    codec2_fft(bss_fft_cfg, fw, Fw);
 
     for (i = 0; i < FFT_SIZE; i++) {
         Fw[i].real = Fw[i].real * Fw[i].real + Fw[i].imag * Fw[i].imag;
@@ -222,7 +221,7 @@ float nlp(
         }
     }
 
-    best_f0 = post_process_sub_multiples(Fw, gmax, gmax_bin, prev_Wo);
+    float best_f0 = post_process_sub_multiples(Fw, gmax, gmax_bin, prev_Wo);
 
     /* Shift samples in buffer to make room for new samples */
 

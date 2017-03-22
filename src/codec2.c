@@ -6,9 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 
 #include "defines.h"
 #include "sine.h"
@@ -29,14 +26,16 @@ static void codec2_decode_1300(short [], const unsigned char *, float);
 
 /* BSS Storage */
 
-MODEL bss_prev_model_dec; /* previous frame's model parameters         */
-kiss_fft_cfg bss_fft_fwd_cfg; /* forward FFT config                        */
-kiss_fft_cfg bss_fft_inv_cfg; /* inverse FFT config                        */
+codec2_fft_cfg bss_fft_fwd_cfg;
+codec2_fftr_cfg bss_fftr_fwd_cfg;
+codec2_fftr_cfg bss_fftr_inv_cfg;
+
+MODEL bss_prev_model_dec;
 COMP bss_W[FFT_SIZE]; /* DFT of w[]                                */
 float bss_w[M]; /* time domain hamming window                */
 float bss_Pn[2 * N]; /* trapezoidal synthesis window              */
 float bss_Sn[M]; /* input speech                              */
-float bss_Sn_[2 * N]; /* synthesised output speech                 */
+float bss_Sn_[2 * N]; /* synthesized output speech                 */
 float bss_ex_phase; /* excitation model phase track              */
 float bss_bg_est; /* background noise estimate for post filter */
 float bss_prev_Wo_enc; /* previous frame's pitch estimate           */
@@ -60,12 +59,12 @@ int codec2_create() {
         bss_Sn_[i] = 0.0f;
     }
 
-    bss_fft_fwd_cfg = kiss_fft_alloc(FFT_SIZE, 0, NULL, NULL);
-
+    bss_fft_fwd_cfg = codec2_fft_alloc(FFT_SIZE, 0, NULL, NULL);
+    bss_fftr_fwd_cfg = codec2_fftr_alloc(FFT_SIZE, 0, NULL, NULL);
+    bss_fftr_inv_cfg = codec2_fftr_alloc(FFT_SIZE, 1, NULL, NULL);
+    
     make_analysis_window(bss_fft_fwd_cfg, bss_w, bss_W);
     make_synthesis_window(bss_Pn);
-
-    bss_fft_inv_cfg = kiss_fft_alloc(FFT_SIZE, 1, NULL, NULL);
 
     bss_prev_Wo_enc = 0.0f;
     bss_bg_est = 0.0f;
@@ -102,8 +101,9 @@ int codec2_create() {
 
 void codec2_destroy() {
     nlp_destroy();
-    free(bss_fft_fwd_cfg);
-    free(bss_fft_inv_cfg);
+    codec2_fft_free(bss_fft_fwd_cfg);
+    codec2_fftr_free(bss_fftr_fwd_cfg);
+    codec2_fftr_free(bss_fftr_inv_cfg);
 }
 
 int codec2_bits_per_frame() {
@@ -255,7 +255,7 @@ static void codec2_decode_1300(short speech[], const unsigned char * bits, float
 
     for (i = 0; i < 4; i++) {
         lsp_to_lpc(&lsps[i][0], &ak[i][0], LPC_ORD);
-        aks_to_M2(bss_fft_fwd_cfg, &ak[i][0], LPC_ORD, &model[i], e[i], &snr, 0,
+        aks_to_M2(bss_fftr_fwd_cfg, &ak[i][0], LPC_ORD, &model[i], e[i], &snr, 0,
                 bss_lpc_pf, bss_bass_boost, bss_beta, bss_gamma, Aw);
         apply_lpc_correction(&model[i]);
         synthesise_one_frame(&speech[N * i], &model[i], Aw);
@@ -274,7 +274,7 @@ static void synthesise_one_frame(short speech[], MODEL *model, COMP Aw[]) {
 
     phase_synth_zero_order(model, &bss_ex_phase, Aw);
     postfilter(model, &bss_bg_est);
-    synthesise(bss_fft_inv_cfg, bss_Sn_, model, bss_Pn, 1);
+    synthesise(bss_fftr_inv_cfg, bss_Sn_, model, bss_Pn, 1);
     ear_protection(bss_Sn_, N);
 
     for (i = 0; i < N; i++) {
@@ -390,7 +390,7 @@ static void make_analysis_window(kiss_fft_cfg fft_fwd_cfg, float w[], COMP W[]) 
         wshift[i].real = w[j];
     }
 
-    kiss_fft(fft_fwd_cfg, (COMP *) wshift, (COMP *) W);
+    kiss_fft(fft_fwd_cfg, wshift, W);
 
     for (i = 0; i < (FFT_SIZE / 2); i++) {
         temp.real = W[i].real;

@@ -6,7 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <math.h>
 
 #include "defines.h"
 #include "comp.h"
@@ -24,22 +23,20 @@ void phase_synth_zero_order(MODEL *model, float *ex_phase, COMP A[]) {
     COMP Ex[MAX_AMP + 1];
     COMP A_[MAX_AMP + 1];
     COMP H[MAX_AMP + 1];
-    float phi, new_phi;
     int m, b;
 
-    float r = (TAU / (FFT_SIZE));
+    float r = TAU / FFT_SIZE;
 
     /* Sample phase at harmonics */
 
     for (m = 1; m <= model->L; m++) {
         b = (int) (m * model->Wo / r + 0.5f);
-        phi = -atan2f(A[b].imag, A[b].real);
-        H[m].real = cosf(phi);
-        H[m].imag = sinf(phi);
+        H[m].real = A[b].real;;
+        H[m].imag = -A[b].imag;
     }
 
-    ex_phase[0] += (model->Wo) * N;
-    ex_phase[0] -= TAU * floorf(ex_phase[0] / TAU + 0.5f);
+    ex_phase[0] += (model->Wo * N);
+    ex_phase[0] -= (TAU * floorf(ex_phase[0] / TAU + 0.5f));
 
     for (m = 1; m <= model->L; m++) {
 
@@ -65,8 +62,7 @@ void phase_synth_zero_order(MODEL *model, float *ex_phase, COMP A[]) {
 
         /* modify sinusoidal phase */
 
-        new_phi = atan2f(A_[m].imag, A_[m].real + 1E-12f);
-        model->phi[m] = new_phi;
+        model->phi[m] = atan2f(A_[m].imag, A_[m].real + 1E-12f);
     }
 }
 

@@ -6,15 +6,10 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 
 #include "defines.h"
-#include "quantise.h"
 #include "kiss_fft.h"
+#include "quantise.h"
 
 #define LSP_DELTA 0.01f         /* grid spacing for LSP root searches */
 

@@ -6,9 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
 
 #include "defines.h"
 #include "sine.h"
@@ -97,7 +94,7 @@ void dft_speech(kiss_fft_cfg fft_fwd_cfg, COMP Sw[], float Sn[], float w[]) {
         sw[FFT_SIZE - NW / 2 + i].real = Sn[i + M / 2 - NW / 2] * w[i + M / 2 - NW / 2];
     }
 
-    kiss_fft(fft_fwd_cfg, (COMP *) sw, (COMP *) Sw);
+    codec2_fft(fft_fwd_cfg, sw, Sw);
 }
 
 void estimate_amplitudes(MODEL *model, COMP Sw[], COMP W[], int est_phase) {

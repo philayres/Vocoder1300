@@ -6,12 +6,9 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <math.h>
-#include <string.h>
 
 #include "defines.h"
 #include "interp.h"
-#include "quantise.h"
 
 void interp_Wo2(MODEL *interp, MODEL *prev, MODEL *next, float weight) {
     if (interp->voiced && !prev->voiced && !next->voiced) {

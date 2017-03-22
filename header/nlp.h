@@ -9,6 +9,11 @@
 #ifndef __NLP__
 #define __NLP__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "comp.h"
 
 int nlp_create(int);
@@ -21,4 +26,7 @@ float nlp(float [], float *, float *);
 #define CNLP        0.3	        /* post processor constant              */
 #define NLP_NTAP    48	        /* Decimation LPF order */
 
+#ifdef __cplusplus
+}
+#endif
 #endif

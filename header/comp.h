@@ -9,10 +9,18 @@
 #ifndef __COMP__
 #define __COMP__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef struct
 {
     float real;
     float imag;
 } COMP;
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -11,8 +11,8 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef KISS_FFT_H
-#define KISS_FFT_H
+#ifndef KISS_FFTR_H
+#define KISS_FFTR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,58 +24,21 @@ extern "C" {
 
 #include "defines.h"
 #include "comp.h"
+#include "kiss_fft.h"
 
-struct kiss_fft_state {
-    int nfft;
-    int inverse;
-    int factors[64];
-    COMP twiddles[1];
+struct kiss_fftr_state {
+    kiss_fft_cfg substate;
+    COMP *tmpbuf;
+    COMP *super_twiddles;
 };
 
-typedef struct kiss_fft_state *kiss_fft_cfg;
+typedef struct kiss_fftr_state *kiss_fftr_cfg;
 
-#define S_MUL(a,b) ( (a)*(b) )
+kiss_fftr_cfg kiss_fftr_alloc(int, int, void *, size_t *);
+void kiss_fftr(kiss_fftr_cfg,const float *, COMP *);
+void kiss_fftri(kiss_fftr_cfg, const COMP *, float *);
 
-#define C_MUL(m,a,b) \
-    do{ (m).real = (a).real*(b).real - (a).imag*(b).imag;\
-        (m).imag = (a).real*(b).imag + (a).imag*(b).real; }while(0)
-
-#define C_MULBYSCALAR( c, s ) \
-    do{ (c).real *= (s);\
-        (c).imag *= (s); }while(0)
-
-#define  C_ADD( res, a,b)\
-    do { \
-	    (res).real=(a).real+(b).real;  (res).imag=(a).imag+(b).imag; \
-    }while(0)
-
-#define  C_SUB( res, a,b)\
-    do { \
-	    (res).real=(a).real-(b).real;  (res).imag=(a).imag-(b).imag; \
-    }while(0)
-
-#define C_ADDTO( res , a)\
-    do { \
-	    (res).real += (a).real;  (res).imag += (a).imag;\
-    }while(0)
-
-#define C_SUBFROM( res , a)\
-    do {\
-	    (res).real -= (a).real;  (res).imag -= (a).imag; \
-    }while(0)
-
-#define HALF_OF(x) ((x)*.5)
-
-#define  kf_cexp(x,phase) \
-	do{ \
-		(x)->real = cosf(phase);\
-		(x)->imag = sinf(phase);\
-	}while(0)
-
-kiss_fft_cfg kiss_fft_alloc(int, int, void *, size_t *);
-void kiss_fft(kiss_fft_cfg, const COMP *, COMP *);
-void kiss_fft_stride(kiss_fft_cfg, const COMP *, COMP *, int);
-int kiss_fft_next_fast_size(int);
+#define kiss_fftr_free free
 
 #ifdef __cplusplus
 }

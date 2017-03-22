@@ -9,10 +9,18 @@
 #ifndef __INTERP__
 #define __INTERP__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    
 #include "kiss_fft.h"
 
 void interp_Wo2(MODEL *, MODEL *, MODEL *, float);
 float interp_energy2(float, float, float);
 void interpolate_lsp_ver2(float [], float [], float [], float, int);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -9,6 +9,14 @@
 #ifndef __POSTFILTER__
 #define __POSTFILTER__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 void postfilter(MODEL *, float *);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

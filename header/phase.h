@@ -9,9 +9,17 @@
 #ifndef __PHASE__
 #define __PHASE__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define CODEC2_RAND_MAX 32767
 
 int codec2_rand(void);
 void phase_synth_zero_order(MODEL *, float *, COMP []);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

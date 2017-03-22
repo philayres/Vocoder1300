@@ -25,8 +25,8 @@ void codec2_set_lpc_post_filter(int, int, float, float);
 int codec2_get_spare_bit_index(void);
 int codec2_rebuild_spare_bit(int []);
 void codec2_set_natural_or_gray(int);
-void codec2_set_softdec(float *);
 float codec2_get_energy(const unsigned char *);
+float codec2_get_sum_beste(void);
 
 #endif
 

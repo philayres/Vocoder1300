@@ -6,22 +6,19 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
 
 #include "defines.h"
 #include "sine.h"
-#include "kiss_fft.h"
+#include "codec2_fft.h"
 
-void synthesise(kiss_fft_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[], int shift) {
+void synthesise(codec2_fftr_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[], int shift) {
     COMP Sw_[FFT_SIZE];
-    COMP sw_[FFT_SIZE];
+    float sw_[FFT_SIZE];
     int i, l, j, b;
 
     if (shift) {
         /* Update memories */
-        for (i = 0; i < N - 1; i++) {
+        for (i = 0; i < (N - 1); i++) {
             Sn_[i] = Sn_[i + N];
         }
         
@@ -33,7 +30,7 @@ void synthesise(kiss_fft_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[],
         Sw_[i].imag = 0.0f;
     }
 
-    /* Now set up frequency domain synthesised speech */
+    /* Now set up frequency domain synthesized speech */
     for (l = 1; l <= model->L; l++) {
         b = (int) (l * model->Wo * FFT_SIZE / TAU + 0.5f);
         
@@ -49,22 +46,22 @@ void synthesise(kiss_fft_cfg fft_inv_cfg, float Sn_[], MODEL *model, float Pn[],
     }
 
     /* Perform inverse DFT */
-
-    kiss_fft(fft_inv_cfg, (COMP *) Sw_, (COMP *) sw_);
+    
+    codec2_fftri(fft_inv_cfg, Sw_, sw_);
 
     /* Overlap add to previous samples */
 
-    for (i = 0; i < N - 1; i++) {
-        Sn_[i] += sw_[FFT_SIZE - N + 1 + i].real * Pn[i];
+    for (i = 0; i < (N - 1); i++) {
+        Sn_[i] += sw_[FFT_SIZE - N + 1 + i] * Pn[i];
     }
 
     if (shift) {
-        for (i = N - 1, j = 0; i < 2 * N; i++, j++) {
-            Sn_[i] = sw_[j].real * Pn[i];
+        for (i = (N - 1), j = 0; i < (2 * N); i++, j++) {
+            Sn_[i] = sw_[j] * Pn[i];
         }
     } else {
-        for (i = N - 1, j = 0; i < 2 * N; i++, j++) {
-            Sn_[i] += sw_[j].real * Pn[i];
+        for (i = (N - 1), j = 0; i < (2 * N); i++, j++) {
+            Sn_[i] += sw_[j] * Pn[i];
         }
     }
 }

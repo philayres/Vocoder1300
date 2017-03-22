@@ -6,9 +6,6 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
 
 #include "defines.h"
 #include "comp.h"
