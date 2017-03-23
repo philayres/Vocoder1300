@@ -1,5 +1,4 @@
-#### vocoder1300
-A codec2 LPC-10 1300 bps Speech Vocoder
+#### Codec2 LPC-10 1300 bps Speech Vocoder
 
 The purpose of this version of the vocoder, is to break out the encoder and decoder parts into separate directories, and to delete the other modes.
 
