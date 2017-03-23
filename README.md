@@ -10,6 +10,21 @@ If you burst the ZIP file it will create all the directories, and you can just t
 #### Design Change
 I'm an old geezer, so I like to see my data in the BSS section, rather then allocated into RAM using malloc. So you will notice that right off the bat, as there is an API change where you don't have to worry about the malloc pointer.
 
+#### Input/Output Format
+
+The vocoder changes 320 samples of 16-bit signed PCM at 8 kHz to 4 bytes that are packed with 52-bits of information. It also does the reverse.
+
+```
+LSP     36-bits
+Pitch    7-bits
+Energy   5-bits
+Voicing  4-bits
+---------------
+Total   52-bits
+```
+
+Each vocoder frame is packed into 7 bytes, with each component individually  ```gray``` coded.
+
 #### Testing
 Here's how I compile the test programs. Put the library file in ```/usr/local/lib``` and do a ```sudo ldconfig```:
 ```
