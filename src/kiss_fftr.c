@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "kiss_fft.h"
 #include "kiss_fftr.h"
 
-kiss_fftr_cfg kiss_fftr_alloc(int nfft, int inverse_fft, void * mem, size_t * lenmem) {
+kiss_fftr_cfg kiss_fftr_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
     int i;
     kiss_fftr_cfg st = NULL;
     size_t subsize, memneeded;
@@ -23,11 +23,12 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft, int inverse_fft, void * mem, size_t * le
     if (nfft & 1) {
         return NULL;
     }
-    
+
     nfft >>= 1;
 
     kiss_fft_alloc(nfft, inverse_fft, NULL, &subsize);
-    memneeded = sizeof (struct kiss_fftr_state) + subsize + sizeof(COMP) * (nfft * 3 / 2);
+
+    memneeded = sizeof (struct kiss_fftr_state) +subsize + sizeof (COMP) * (nfft * 3 / 2);
 
     if (lenmem == NULL) {
         st = (kiss_fftr_cfg) malloc(memneeded);
@@ -35,10 +36,10 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft, int inverse_fft, void * mem, size_t * le
         if (*lenmem >= memneeded) {
             st = (kiss_fftr_cfg) mem;
         }
-        
+
         *lenmem = memneeded;
     }
-    
+
     if (!st) {
         return NULL;
     }
@@ -46,18 +47,19 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft, int inverse_fft, void * mem, size_t * le
     st->substate = (kiss_fft_cfg) (st + 1);
     st->tmpbuf = (COMP *) (((char *) st->substate) + subsize);
     st->super_twiddles = st->tmpbuf + nfft;
+
     kiss_fft_alloc(nfft, inverse_fft, st->substate, &subsize);
 
     for (i = 0; i < nfft / 2; ++i) {
         float phase = -M_PI * ((float) (i + 1) / nfft + .5f);
-        
+
         if (inverse_fft) {
             phase *= -1.0f;
         }
-        
+
         kf_cexp(st->super_twiddles + i, phase);
     }
-    
+
     return st;
 }
 

@@ -15,15 +15,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "kiss_fft.h"
 
 static void kf_bfly2(
-        COMP * Fout,
+        COMP *Fout,
         const size_t fstride,
         const kiss_fft_cfg st,
         int m
         ) {
-    COMP * Fout2;
-    COMP * tw1 = st->twiddles;
+    COMP *Fout2;
+    COMP *tw1 = st->twiddles;
     COMP t;
     Fout2 = Fout + m;
+
     do {
         C_MUL(t, *Fout2, *tw1);
         tw1 += fstride;
@@ -35,7 +36,7 @@ static void kf_bfly2(
 }
 
 static void kf_bfly4(
-        COMP * Fout,
+        COMP *Fout,
         const size_t fstride,
         const kiss_fft_cfg st,
         const size_t m
@@ -75,6 +76,7 @@ static void kf_bfly4(
             Fout[m3].real = scratch[5].real - scratch[4].imag;
             Fout[m3].imag = scratch[5].imag + scratch[4].real;
         }
+
         ++Fout;
     } while (--k);
 }
@@ -97,9 +99,9 @@ static void kf_bfly3(
     do {
         C_MUL(scratch[1], Fout[m], *tw1);
         C_MUL(scratch[2], Fout[m2], *tw2);
-
         C_ADD(scratch[3], scratch[1], scratch[2]);
         C_SUB(scratch[0], scratch[1], scratch[2]);
+
         tw1 += fstride;
         tw2 += fstride * 2;
 
@@ -107,7 +109,6 @@ static void kf_bfly3(
         Fout[m].imag = Fout->imag - HALF_OF(scratch[3].imag);
 
         C_MULBYSCALAR(scratch[0], epi3.imag);
-
         C_ADDTO(*Fout, scratch[3]);
 
         Fout[m2].real = Fout[m].real + scratch[0].imag;
@@ -121,7 +122,7 @@ static void kf_bfly3(
 }
 
 static void kf_bfly5(
-        COMP * Fout,
+        COMP *Fout,
         const size_t fstride,
         const kiss_fft_cfg st,
         int m
@@ -142,6 +143,7 @@ static void kf_bfly5(
     Fout4 = Fout0 + 4 * m;
 
     tw = st->twiddles;
+
     for (u = 0; u < m; ++u) {
         scratch[0] = *Fout0;
 
@@ -195,16 +197,18 @@ static void kf_bfly_generic(
     int Norig = st->nfft;
     int u, k, q1, q;
 
-    COMP *scratch = (COMP*) malloc(sizeof (COMP) * p);
+    COMP *scratch = (COMP *) malloc(sizeof (COMP) * p);
 
     for (u = 0; u < m; ++u) {
         k = u;
+
         for (q1 = 0; q1 < p; ++q1) {
             scratch[q1] = Fout[ k ];
             k += m;
         }
 
         k = u;
+
         for (q1 = 0; q1 < p; ++q1) {
             int twidx = 0;
             Fout[ k ] = scratch[0];
@@ -215,6 +219,7 @@ static void kf_bfly_generic(
                 C_MUL(t, scratch[q], twiddles[twidx]);
                 C_ADDTO(Fout[ k ], t);
             }
+
             k += m;
         }
     }
@@ -223,17 +228,17 @@ static void kf_bfly_generic(
 }
 
 static void kf_work(
-        COMP * Fout,
-        const COMP * f,
+        COMP *Fout,
+        const COMP *f,
         const size_t fstride,
         int in_stride,
-        int * factors,
+        int *factors,
         const kiss_fft_cfg st
         ) {
     COMP * Fout_beg = Fout;
     const int p = *factors++; /* the radix  */
     const int m = *factors++; /* stage's fft length/p */
-    const COMP * Fout_end = Fout + p*m;
+    const COMP *Fout_end = Fout + p*m;
 
     if (m == 1) {
         do {
@@ -264,7 +269,7 @@ static void kf_work(
     }
 }
 
-static void kf_factor(int n, int * facbuf) {
+static void kf_factor(int n, int *facbuf) {
     int p = 4;
     float floor_sqrt = floorf(sqrtf((float) n));
 
@@ -288,7 +293,7 @@ static void kf_factor(int n, int * facbuf) {
     } while (n > 1);
 }
 
-kiss_fft_cfg kiss_fft_alloc(int nfft, int inverse_fft, void * mem, size_t * lenmem) {
+kiss_fft_cfg kiss_fft_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
     kiss_fft_cfg st = NULL;
     size_t memneeded = sizeof (struct kiss_fft_state) + sizeof (COMP) * (nfft - 1); /* twiddle factors*/
 
@@ -297,28 +302,33 @@ kiss_fft_cfg kiss_fft_alloc(int nfft, int inverse_fft, void * mem, size_t * lenm
     } else {
         if (mem != NULL && *lenmem >= memneeded)
             st = (kiss_fft_cfg) mem;
+
         *lenmem = memneeded;
     }
+
     if (st) {
         int i;
         st->nfft = nfft;
         st->inverse = inverse_fft;
 
         for (i = 0; i < nfft; ++i) {
-            float phase = -2.0f * M_PI * i / nfft;
+            float phase = -TAU * i / nfft;
+
             if (st->inverse)
-                phase *= -1;
+                phase *= -1.0f;
+            
             kf_cexp(st->twiddles + i, phase);
         }
 
         kf_factor(nfft, st->factors);
     }
+
     return st;
 }
 
 void kiss_fft_stride(kiss_fft_cfg st, const COMP *fin, COMP *fout, int in_stride) {
     if (fin == fout) {
-        COMP *tmpbuf = (COMP*) malloc(sizeof (COMP) * st->nfft);
+        COMP *tmpbuf = (COMP *) malloc(sizeof (COMP) * st->nfft);
         kf_work(tmpbuf, fin, 1, in_stride, st->factors, st);
         memcpy(fout, tmpbuf, sizeof (COMP) * st->nfft);
         free(tmpbuf);
@@ -334,9 +344,14 @@ void kiss_fft(kiss_fft_cfg cfg, const COMP *fin, COMP *fout) {
 int kiss_fft_next_fast_size(int n) {
     while (1) {
         int m = n;
-        while ((m % 2) == 0) m /= 2;
-        while ((m % 3) == 0) m /= 3;
-        while ((m % 5) == 0) m /= 5;
+
+        while ((m % 2) == 0)
+            m /= 2;
+        while ((m % 3) == 0)
+            m /= 3;
+        while ((m % 5) == 0)
+            m /= 5;
+
         if (m <= 1)
             break; /* n is completely factorable by twos, threes, and fives */
         n++;

@@ -6,13 +6,14 @@
  * Licensed under GNU LGPL V2.1
  * See LICENSE file for information
  */
+
+#ifndef __CODEC2__
+#define  __CODEC2__
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#ifndef __CODEC2__
-#define  __CODEC2__
 
 int codec2_create(void);
 void codec2_destroy(void);
@@ -28,8 +29,7 @@ void codec2_set_natural_or_gray(int);
 float codec2_get_energy(const unsigned char *);
 float codec2_get_sum_beste(void);
 
-#endif
-
 #ifdef __cplusplus
 }
+#endif
 #endif

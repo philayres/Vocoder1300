@@ -15,7 +15,7 @@ extern "C"
 {
 #endif
 
-    int codec2_create(void);
+int codec2_create(void);
 void codec2_destroy(void);
 void codec2_encode(unsigned char *, short []);
 void codec2_decode(short [], const unsigned char *);

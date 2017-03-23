@@ -7,8 +7,8 @@
  * See LICENSE file for information
  */
 
-#ifndef CODEC2_FFT_H
-#define CODEC2_FFT_H
+#ifndef __CODEC2_FFT__
+#define __CODEC2_FFT__
 
 #ifdef __cplusplus
 extern "C"

@@ -15,12 +15,11 @@
 /* BSS Storage */
 
 static int bss_m;
-static float bss_w[PMAX_M / DEC];       /* DFT window                   */
-static float bss_sq[PMAX_M];            /* squared speech samples       */
+static float bss_w[PMAX_M / DEC]; /* DFT window                   */
+static float bss_sq[PMAX_M]; /* squared speech samples       */
 static float bss_mem_x;
-static float bss_mem_y;                 /* memory for notch filter      */
-static float bss_mem_fir[NLP_NTAP];     /* decimation FIR filter memory */
-static codec2_fft_cfg bss_fft_cfg;        /* kiss FFT config              */
+static float bss_mem_y; /* memory for notch filter      */
+static float bss_mem_fir[NLP_NTAP]; /* decimation FIR filter memory */
 
 /* 48 tap 600Hz low pass FIR filter coefficients */
 
@@ -77,10 +76,10 @@ static const float nlp_fir[] = {
 
 static float post_process_sub_multiples(COMP [], float, int, float *);
 
-int nlp_create(int m) {
+void nlp_create(int m) {
     int i;
 
-    bss_m = m;  /* 320 samples */
+    bss_m = m; /* 320 samples */
 
     for (i = 0; i < m / DEC; i++) {
         bss_w[i] = 0.5f - 0.5f * cosf(2 * M_PI * i / (m / DEC - 1));
@@ -88,18 +87,6 @@ int nlp_create(int m) {
 
     bss_mem_x = 0.0f;
     bss_mem_y = 0.0f;
-
-    bss_fft_cfg = codec2_fft_alloc(FFT_SIZE, 0, NULL, NULL);
-
-    if (bss_fft_cfg == NULL) {
-        return 0;
-    }
-
-    return 1;
-}
-
-void nlp_destroy(void) {
-    codec2_fft_free(bss_fft_cfg);
 }
 
 static float post_process_sub_multiples(COMP Fw[], float gmax, int gmax_bin, float *prev_Wo) {
@@ -109,13 +96,13 @@ static float post_process_sub_multiples(COMP Fw[], float gmax, int gmax_bin, flo
     int mult = 2;
     int min_bin = FFT_SIZE * DEC / P_MAX;
     int cmax_bin = gmax_bin;
-    int prev_f0_bin = (int) (*prev_Wo * (4000.0f / M_PI) * (float)(FFT_SIZE * DEC) / (float)SAMPLE_RATE);
+    int prev_f0_bin = (int) (*prev_Wo * (4000.0f / M_PI) * (float) (FFT_SIZE * DEC) / (float) SAMPLE_RATE);
 
     while (gmax_bin / mult >= min_bin) {
         b = gmax_bin / mult; /* determine search interval */
         bmin = 0.8f * b;
         bmax = 1.2f * b;
-        
+
         if (bmin < min_bin) {
             bmin = min_bin;
         }
@@ -152,6 +139,7 @@ static float post_process_sub_multiples(COMP Fw[], float gmax, int gmax_bin, flo
 }
 
 float nlp(
+        codec2_fft_cfg fft_fwd_cfg,
         float Sn[], /* input speech vector */
         float *pitch, /* estimated pitch period in samples */
         float *prev_Wo
@@ -169,8 +157,8 @@ float nlp(
     }
 
     /* notch filter at DC */
-    
-    for (i = bss_m - N; i < bss_m; i++) { 
+
+    for (i = bss_m - N; i < bss_m; i++) {
         notch = bss_sq[i] - bss_mem_x;
         notch += COEFF * bss_mem_y;
         bss_mem_x = bss_sq[i];
@@ -196,14 +184,14 @@ float nlp(
         fw[i].real = 0.0f;
         fw[i].imag = 0.0f;
     }
-    
+
     /* Decimate by 5 and DFT */
-    
-    for (i = 0; i < bss_m / DEC; i++) {         /* 320 / 5 = 64 */
+
+    for (i = 0; i < bss_m / DEC; i++) { /* 320 / 5 = 64 */
         fw[i].real = bss_sq[i * DEC] * bss_w[i];
     }
 
-    codec2_fft(bss_fft_cfg, fw, Fw);
+    codec2_fft(fft_fwd_cfg, fw, Fw);
 
     for (i = 0; i < FFT_SIZE; i++) {
         Fw[i].real = Fw[i].real * Fw[i].real + Fw[i].imag * Fw[i].imag;

@@ -14,11 +14,10 @@ extern "C"
 {
 #endif
 
-#include "comp.h"
+#include "codec2_fft.h"
 
-int nlp_create(int);
-void nlp_destroy(void);
-float nlp(float [], float *, float *);
+void nlp_create(int);
+float nlp(codec2_fft_cfg, float [], float *, float *);
 
 #define PMAX_M      600		/* maximum NLP analysis window size     */
 #define COEFF       0.95	/* notch filter parameter               */

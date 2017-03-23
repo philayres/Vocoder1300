@@ -9,11 +9,11 @@
 
 #include "codec2_fft.h"
 
-codec2_fft_cfg codec2_fft_alloc(int nfft, int inverse_fft, void* mem, size_t* lenmem) {
+codec2_fft_cfg codec2_fft_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
     return kiss_fft_alloc(nfft, inverse_fft, mem, lenmem);
 }
 
-codec2_fftr_cfg codec2_fftr_alloc(int nfft, int inverse_fft, void* mem, size_t* lenmem) {
+codec2_fftr_cfg codec2_fftr_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
     return kiss_fftr_alloc(nfft, inverse_fft, mem, lenmem);
 }
 
@@ -30,8 +30,8 @@ void codec2_fft_inplace(codec2_fft_cfg cfg, COMP *inout) {
 
     if (cfg->nfft <= FFT_SIZE) {
         memcpy(in, inout, cfg->nfft * sizeof (COMP));
-        kiss_fft(cfg, in, (COMP *) inout);
+        kiss_fft(cfg, in, inout);
     } else {
-        kiss_fft(cfg, (COMP *) inout, (COMP *) inout);
+        kiss_fft(cfg, inout, inout);
     }
 }

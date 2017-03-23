@@ -63,8 +63,15 @@ int codec2_create() {
     bss_fftr_fwd_cfg = codec2_fftr_alloc(FFT_SIZE, 0, NULL, NULL);
     bss_fftr_inv_cfg = codec2_fftr_alloc(FFT_SIZE, 1, NULL, NULL);
     
+    if (bss_fft_fwd_cfg == NULL ||
+            bss_fftr_fwd_cfg == NULL ||
+            bss_fftr_inv_cfg == NULL) {
+        return 0;
+    }
+
     make_analysis_window(bss_fft_fwd_cfg, bss_w, bss_W);
     make_synthesis_window(bss_Pn);
+    nlp_create(M);
 
     bss_prev_Wo_enc = 0.0f;
     bss_bg_est = 0.0f;
@@ -85,10 +92,6 @@ int codec2_create() {
 
     bss_prev_e_dec = 1.0f;
 
-    if (nlp_create(M) == 0) {
-        return 0;
-    }
-
     bss_gray = 1;
     bss_lpc_pf = 1;
     bss_bass_boost = 1;
@@ -100,7 +103,6 @@ int codec2_create() {
 }
 
 void codec2_destroy() {
-    nlp_destroy();
     codec2_fft_free(bss_fft_fwd_cfg);
     codec2_fftr_free(bss_fftr_fwd_cfg);
     codec2_fftr_free(bss_fftr_inv_cfg);
@@ -314,7 +316,7 @@ static void analyse_one_frame(MODEL *model, short speech[]) {
      * Estimate pitch (Sn)
      */
 
-    nlp(bss_Sn, &pitch, &bss_prev_Wo_enc);
+    nlp(bss_fft_fwd_cfg, bss_Sn, &pitch, &bss_prev_Wo_enc);
 
     model->Wo = TAU / pitch;
     model->L = M_PI / model->Wo;

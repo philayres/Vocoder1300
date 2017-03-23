@@ -35,8 +35,8 @@ static const unsigned int ShiftRight = 3;
  * be >= 0.
  */
 void pack_natural_or_gray(
-        unsigned char * bitArray, /* The output bit string. */
-        unsigned int * bitIndex, /* Index into the string in BITS, not bytes.*/
+        unsigned char *bitArray, /* The output bit string. */
+        unsigned int *bitIndex, /* Index into the string in BITS, not bytes.*/
         int field, /* The bit field to be packed. */
         unsigned int fieldWidth, /* Width of the field in BITS, not bytes. */
         unsigned int gray /* non-zero for gray coding */
@@ -49,13 +49,12 @@ void pack_natural_or_gray(
     do {
         unsigned int bI = *bitIndex;
         unsigned int bitsLeft = WordSize - (bI & IndexMask);
-        unsigned int sliceWidth =
-                bitsLeft < fieldWidth ? bitsLeft : fieldWidth;
+        unsigned int sliceWidth = bitsLeft < fieldWidth ? bitsLeft : fieldWidth;
         unsigned int wordIndex = bI >> ShiftRight;
 
         bitArray[wordIndex] |=
-                ((unsigned char) ((field >> (fieldWidth - sliceWidth))
-                << (bitsLeft - sliceWidth)));
+                ((unsigned char) ((field >> (fieldWidth - sliceWidth)) <<
+                (bitsLeft - sliceWidth)));
 
         *bitIndex = bI + sliceWidth;
         fieldWidth -= sliceWidth;
@@ -67,8 +66,8 @@ void pack_natural_or_gray(
  *
  */
 int unpack_natural_or_gray(
-        const unsigned char * bitArray, /* The input bit string. */
-        unsigned int * bitIndex, /* Index into the string in BITS, not bytes.*/
+        const unsigned char *bitArray, /* The input bit string. */
+        unsigned int *bitIndex, /* Index into the string in BITS, not bytes.*/
         unsigned int fieldWidth, /* Width of the field in BITS, not bytes. */
         unsigned int gray /* non-zero for Gray coding */
         ) {
@@ -78,10 +77,11 @@ int unpack_natural_or_gray(
     do {
         unsigned int bI = *bitIndex;
         unsigned int bitsLeft = WordSize - (bI & IndexMask);
-        unsigned int sliceWidth =
-                bitsLeft < fieldWidth ? bitsLeft : fieldWidth;
+        unsigned int sliceWidth = bitsLeft < fieldWidth ? bitsLeft : fieldWidth;
 
-        field |= (((bitArray[bI >> ShiftRight] >> (bitsLeft - sliceWidth)) & ((1 << sliceWidth) - 1)) << (fieldWidth - sliceWidth));
+        field |= (((bitArray[bI >> ShiftRight] >>
+                (bitsLeft - sliceWidth)) & ((1 << sliceWidth) - 1)) <<
+                (fieldWidth - sliceWidth));
 
         *bitIndex = bI + sliceWidth;
         fieldWidth -= sliceWidth;
