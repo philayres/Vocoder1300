@@ -17,7 +17,7 @@ extern "C"
 
 int codec2_create(void);
 void codec2_destroy(void);
-void codec2_encode(unsigned char *, short []);
+void codec2_encode(unsigned char *, short [], unsigned int charbits);
 void codec2_decode(short [], const unsigned char *);
 void codec2_decode_ber(short [], const unsigned char *, float);
 int codec2_samples_per_frame(void);
