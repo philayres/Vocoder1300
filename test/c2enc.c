@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
     int            nsam, nbit, nbyte;
     float         *unpacked_bits;
 
+    unsigned int  charbits = 1;
+
     if (argc < 3) {
 	printf("usage: c2enc InputRawspeechFile OutputBitFile\n");
 	printf("e.g    c2enc ../raw/hts1a.raw hts1a.c2\n");
@@ -66,14 +68,18 @@ int main(int argc, char *argv[])
     nsam = codec2_samples_per_frame();
     nbit = codec2_bits_per_frame();
     buf = (short *) malloc(nsam * sizeof(short));
-    nbyte = (nbit + 7) / 8;
+    
+    if(charbits)
+      nbyte = nbit;
+    else
+      nbyte = (nbit + 7) / 8;
 
     bits = (unsigned char *) malloc(nbyte * sizeof(char));
     unpacked_bits = (float *) malloc(nbit * sizeof(float));
 
     while(fread(buf, sizeof(short), nsam, fin) == (size_t)nsam) {
 
-	codec2_encode(bits, buf);
+	codec2_encode(bits, buf, charbits);
 
         fwrite(bits, sizeof(char), nbyte, fout);
 

@@ -34,6 +34,18 @@ static const unsigned int ShiftRight = 3;
  * compatibility with the rest of the code, indices are always expected to
  * be >= 0.
  */
+void pack_charbits(
+  unsigned char *bitArray,
+  int field
+){
+  char charstr[10];
+
+  sprintf(charstr, "%c", field);
+  strcat(bitArray, charstr);
+}
+ 
+ 
+ 
 void pack_natural_or_gray(
         unsigned char *bitArray, /* The output bit string. */
         unsigned int *bitIndex, /* Index into the string in BITS, not bytes.*/
