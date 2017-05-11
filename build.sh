@@ -2,7 +2,8 @@
 # build.sh
 objects=""
 
-for f in $( ls src ); do
+for filename in $( ls src/*.c ); do
+f=$(echo $filename | cut -f 1 -d '.')
 gcc -o $f.o -c $f.c
 objects=src/$f.o $objects
 done
