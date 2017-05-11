@@ -4,12 +4,12 @@ objects=""
 
 for filename in $( ls src/*.c ); do
 f=$(echo $filename | cut -f 1 -d '.')
-gcc -o $f.o -c $f.c
+gcc -Iheader -o $f.o -c $f.c
 objects=src/$f.o $objects
 done
 
 
-gcc -shared -o libmylib.so $objects -lm 
+gcc -Iheader -shared -o libmylib.so $objects -lm 
 
 export LD_LIBRARY_PATH=`pwd`:$LD_LIBRARY_PATH
 cd test
