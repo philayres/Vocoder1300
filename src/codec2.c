@@ -116,8 +116,8 @@ int codec2_samples_per_frame() {
     return 320;
 }
 
-void codec2_encode(unsigned char *bits, short speech[]) {
-    codec2_encode_1300(bits, speech);
+void codec2_encode(unsigned char *bits, short speech[], unsigned int charbits) {
+    codec2_encode_1300(bits, speech, charbits);
 }
 
 void codec2_decode(short speech[], const unsigned char *bits) {

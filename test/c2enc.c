@@ -77,6 +77,9 @@ int main(int argc, char *argv[])
     bits = (unsigned char *) malloc(nbyte * sizeof(char));
     unpacked_bits = (float *) malloc(nbit * sizeof(float));
 
+    if(charbits)
+      bits[0]=0;
+
     while(fread(buf, sizeof(short), nsam, fin) == (size_t)nsam) {
 
 	codec2_encode(bits, buf, charbits);
