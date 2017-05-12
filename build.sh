@@ -5,7 +5,7 @@ objects=""
 for filename in $( ls src/*.c ); do
 f=$(echo $filename | cut -f 1 -d '.')
 gcc -Iheader -o $f.o -c $f.c
-objects=src/$f.o $objects
+objects=$f.o $objects
 done
 
 
