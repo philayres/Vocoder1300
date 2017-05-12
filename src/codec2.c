@@ -21,7 +21,7 @@ static void synthesise_one_frame(short [], MODEL *, COMP []);
 static void ear_protection(float in_out[], int n);
 static void make_analysis_window(codec2_fft_cfg, float [], COMP []);
 static void make_synthesis_window(float []);
-static void codec2_encode_1300(unsigned char *, short []);
+static void codec2_encode_1300(unsigned char *, short [], unsigned int charbits);
 static void codec2_decode_1300(short [], const unsigned char *, float);
 
 /* BSS Storage */
@@ -187,46 +187,46 @@ static void codec2_encode_1300(unsigned char * bits, short speech[], unsigned in
 
     analyse_one_frame(&model, speech);
     if(charbits)
-      pack_charbits(bits, model.voiced);
+      pack_charbits(bits, &nbit, model.voiced);
     else
       pack_natural_or_gray(bits, &nbit, model.voiced, 1, bss_gray);
 
     analyse_one_frame(&model, &speech[N]);
     if(charbits)
-      pack_charbits(bits, model.voiced);
+      pack_charbits(bits, &nbit, model.voiced);
     else
       pack_natural_or_gray(bits, &nbit, model.voiced, 1, bss_gray);
 
     analyse_one_frame(&model, &speech[2 * N]);
     if(charbits)
-      pack_charbits(bits, model.voiced);
+      pack_charbits(bits, &nbit, model.voiced);
     else
     pack_natural_or_gray(bits, &nbit, model.voiced, 1, bss_gray);
 
     analyse_one_frame(&model, &speech[3 * N]);
     if(charbits)
-      pack_charbits(bits, model.voiced);
+      pack_charbits(bits, &nbit, model.voiced);
     else
       pack_natural_or_gray(bits, &nbit, model.voiced, 1, bss_gray);
 
     int Wo_index = encode_Wo(model.Wo, WO_BITS);
     if(charbits)
-      pack_charbits(bits, Wo_index);
+      pack_charbits(bits, &nbit, Wo_index);
     else
       pack_natural_or_gray(bits, &nbit, Wo_index, WO_BITS, bss_gray);
 
     float e = speech_to_uq_lsps(lsps, ak, bss_Sn, bss_w, LPC_ORD);
     int e_index = encode_energy(e, E_BITS);
     if(charbits)
-      pack_charbits(bits, e_index);
-    else
+      pack_charbits(bits, &nbit, e_index);
+    else 
       pack_natural_or_gray(bits, &nbit, e_index, E_BITS, bss_gray);
 
     bss_se = encode_lsps_scalar(lsp_indexes, lsps, LPC_ORD);
 
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
       if(charbits)
-        pack_charbits(bits, lsp_bits_encode(i));
+        pack_charbits(bits, &nbit, lsp_bits_encode(i));
       else
         pack_natural_or_gray(bits, &nbit, lsp_indexes[i], lsp_bits_encode(i), bss_gray);
     }
