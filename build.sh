@@ -12,7 +12,7 @@ for filename in $( ls src/*.c encode/*.c decode/*.c ); do
 f=$(echo $filename | cut -f 1 -d '.')
 echo compiling $f.c to $f.o
 gcc -Iheader -o $f.o -c $f.c
-objects=$f.o $objects
+objects="$objects $f.o"
 echo $objects
 done
 
