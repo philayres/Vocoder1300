@@ -19,9 +19,10 @@ done
 echo making libcodec1300.so from $objects
 gcc -Iheader -shared -o libcodec1300.so $objects -lm 
 
-export LD_LIBRARY_PATH=`pwd`:$LD_LIBRARY_PATH
-
-gcc -O2 test/c2enc.c -o test/c2enc -lcodec1300 -lm 
-gcc -O2 test/c2dec.c -o test/c2dec -lcodec1300 -lm
+gcc -O2 test/c2enc.c -o test/c2enc -lcodec1300 -lm -L.
+gcc -O2 test/c2dec.c -o test/c2dec -lcodec1300 -lm -L.
 chmod 775 test/c2enc
 chmod 775 test/c2dec
+
+sudo cp libcodec1300.so /usr/local/lib
+sudo ldconfig
