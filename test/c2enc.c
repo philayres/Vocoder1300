@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     buf = (short *) malloc(nsam * sizeof(short));
     
     if(charbits)
-      nbyte = nbit;
+      nbyte = 13;
     else
       nbyte = (nbit + 7) / 8;
 
