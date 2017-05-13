@@ -226,7 +226,7 @@ static void codec2_encode_1300(unsigned char * bits, short speech[], unsigned in
 
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
       if(charbits)
-        pack_charbits(bits, &nbit, lsp_bits_encode(i));
+        pack_charbits(bits, &nbit, lsp_indexes[i]);
       else
         pack_natural_or_gray(bits, &nbit, lsp_indexes[i], lsp_bits_encode(i), bss_gray);
     }
