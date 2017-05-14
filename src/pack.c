@@ -38,13 +38,27 @@ static const unsigned int ShiftRight = 3;
 void pack_charbits(
   unsigned char *bitArray,
   unsigned int *bitIndex, 
-  unsigned char field
+  int field
 ){
-  bitArray[*bitIndex] = field;
-  *bitIndex++;
+  unsigned int bI = *bitIndex;
+  
+  bitArray[bI] = (unsigned char)field;
+  *bitIndex = bI + 1;
 }
  
- 
+int unpack_charbits(
+        const unsigned char *bitArray, /* The input bit string. */
+        unsigned int *bitIndex /* Index into the string in bytes.*/
+        
+        
+        ) {
+    unsigned int field=0;
+    unsigned int bI = *bitIndex;
+    field = (int)bitArray[bI];
+  //  printf("%d ", field);
+    *bitIndex = bI+1;
+    return field;
+} 
  
 void pack_natural_or_gray(
         unsigned char *bitArray, /* The output bit string. */

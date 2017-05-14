@@ -42,7 +42,8 @@ int main(int argc, char *argv[])
     int            nsam, nbit, nbyte;
     float         *unpacked_bits;
 
-    unsigned int  charbits = 1;
+    unsigned int  charbits = 0;
+    
 
     if (argc < 3) {
 	printf("usage: c2enc InputRawspeechFile OutputBitFile\n");
@@ -63,6 +64,9 @@ int main(int argc, char *argv[])
          argv[2], strerror(errno));
 	exit(1);
     }
+    
+    if (argv[3] && strcmp(argv[3], "charbits") == 0)
+      charbits=1;
 
     codec2_create();
     nsam = codec2_samples_per_frame();
@@ -70,15 +74,15 @@ int main(int argc, char *argv[])
     buf = (short *) malloc(nsam * sizeof(short));
     
     if(charbits)
-      nbyte = 13;
+      nbyte = NUM_CHARBITS;
     else
       nbyte = (nbit + 7) / 8;
+      
+    
 
     bits = (unsigned char *) malloc(nbyte * sizeof(char));
     unpacked_bits = (float *) malloc(nbit * sizeof(float));
 
-    if(charbits)
-      bits[0]=0;
 
     while(fread(buf, sizeof(short), nsam, fin) == (size_t)nsam) {
 
@@ -95,11 +99,12 @@ int main(int argc, char *argv[])
 
     codec2_destroy();
 
+    fclose(fin);
+    fclose(fout);
     free(buf);
     free(bits);
     free(unpacked_bits);
-    fclose(fin);
-    fclose(fout);
+    
 
     return 0;
 }

@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     unsigned char *bits;
     int            nsam, nbit, nbyte;
     int            ret;
+    unsigned int  charbits = 0;
 
     if (argc < 2) {
         fprintf(stderr, "Usage: c2dec filename.c2 filename.raw\n\n");
@@ -60,18 +61,25 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    if (argv[3] && strcmp(argv[3], "charbits") == 0)
+      charbits=1;
+
     codec2_create();
     nsam = codec2_samples_per_frame();
     nbit = codec2_bits_per_frame();
     buf = (short*)malloc(nsam*sizeof(short));
-    nbyte = (nbit + 7) / 8;
+    
+    if(charbits)
+      nbyte = NUM_CHARBITS;
+    else
+      nbyte = (nbit + 7) / 8;
     
     bits = (unsigned char*)malloc(nbyte*sizeof(char));
 
     ret = (fread(bits, sizeof(char), nbyte, fin) == (size_t)nbyte);
 
     while(ret) {
-	codec2_decode(buf, bits);
+	codec2_decode(buf, bits, charbits);
  	fwrite(buf, sizeof(short), nsam, fout);
 
 	//if this is in a pipeline, we probably don't want the usual

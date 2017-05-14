@@ -22,7 +22,9 @@ static void ear_protection(float in_out[], int n);
 static void make_analysis_window(codec2_fft_cfg, float [], COMP []);
 static void make_synthesis_window(float []);
 static void codec2_encode_1300(unsigned char *, short [], unsigned int charbits);
-static void codec2_decode_1300(short [], const unsigned char *, float);
+static void codec2_decode_1300(short [], const unsigned char *, float, unsigned int charbits);
+
+
 
 /* BSS Storage */
 
@@ -120,12 +122,12 @@ void codec2_encode(unsigned char *bits, short speech[], unsigned int charbits) {
     codec2_encode_1300(bits, speech, charbits);
 }
 
-void codec2_decode(short speech[], const unsigned char *bits) {
-    codec2_decode_ber(speech, bits, 0.0f);
+void codec2_decode(short speech[], const unsigned char *bits, unsigned int charbits) {
+    codec2_decode_ber(speech, bits, 0.0f, charbits);
 }
 
-void codec2_decode_ber(short speech[], const unsigned char *bits, float ber_est) {
-    codec2_decode_1300(speech, bits, ber_est);
+void codec2_decode_ber(short speech[], const unsigned char *bits, float ber_est, unsigned int charbits) {
+    codec2_decode_1300(speech, bits, ber_est, charbits);
 }
 
 float codec2_get_energy(const unsigned char *bits) {
@@ -181,7 +183,7 @@ static void codec2_encode_1300(unsigned char * bits, short speech[], unsigned in
 
 
     if(charbits)
-      memset(bits, '\0', codec2_bits_per_frame());
+      memset(bits, '\0', NUM_CHARBITS);
     else
       memset(bits, '\0', ((codec2_bits_per_frame() + 7) / 8));
 
@@ -232,7 +234,7 @@ static void codec2_encode_1300(unsigned char * bits, short speech[], unsigned in
     }
 }
 
-static void codec2_decode_1300(short speech[], const unsigned char * bits, float ber_est) {
+static void codec2_decode_1300(short speech[], const unsigned char * bits, float ber_est, unsigned int charbits) {
     MODEL model[4];
     COMP Aw[FFT_SIZE];
     float lsps[4][LPC_ORD];
@@ -249,20 +251,45 @@ static void codec2_decode_1300(short speech[], const unsigned char * bits, float
         }
     }
 
-    model[0].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
-    model[1].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
-    model[2].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
-    model[3].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
+    if(charbits)
+        model[0].voiced = unpack_charbits(bits, &nbit);
+    else
+        model[0].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
+    if(charbits)
+        model[1].voiced = unpack_charbits(bits, &nbit);
+    else
+        model[1].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
+    if(charbits)
+        model[2].voiced = unpack_charbits(bits, &nbit);
+    else
+        model[2].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
+    if(charbits)
+        model[3].voiced = unpack_charbits(bits, &nbit);
+    else
+        model[3].voiced = unpack_natural_or_gray(bits, &nbit, 1, bss_gray);
 
-    int Wo_index = unpack_natural_or_gray(bits, &nbit, WO_BITS, bss_gray);
+    int Wo_index;
+    
+    
+    if(charbits)
+        Wo_index = unpack_charbits(bits, &nbit);
+    else
+        Wo_index = unpack_natural_or_gray(bits, &nbit, WO_BITS, bss_gray);
     model[3].Wo = decode_Wo(Wo_index, WO_BITS);
     model[3].L = M_PI / model[3].Wo;
 
-    int e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
+    int e_index;
+    if(charbits)
+        e_index = unpack_charbits(bits, &nbit);
+    else
+        e_index = unpack_natural_or_gray(bits, &nbit, E_BITS, bss_gray);
     e[3] = decode_energy(e_index, E_BITS);
 
     for (i = 0; i < LSP_SCALAR_INDEXES; i++) {
-        lsp_indexes[i] = unpack_natural_or_gray(bits, &nbit, lsp_bits_decode(i), bss_gray);
+        if(charbits)
+            lsp_indexes[i] = unpack_charbits(bits, &nbit);
+        else
+            lsp_indexes[i] = unpack_natural_or_gray(bits, &nbit, lsp_bits_decode(i), bss_gray);
     }
 
     decode_lsps_scalar(&lsps[3][0], lsp_indexes, LPC_ORD);
