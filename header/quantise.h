@@ -18,6 +18,8 @@ extern "C"
 #include "kiss_fft.h"
 #include "kiss_fftr.h"
 
+#define NUM_CHARBITS 16
+
 #define WO_BITS     7
 #define WO_LEVELS   (1<<WO_BITS)
 #define E_BITS      5

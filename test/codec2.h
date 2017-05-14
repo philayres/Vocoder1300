@@ -15,11 +15,13 @@ extern "C"
 {
 #endif
 
+#define NUM_CHARBITS 16
+
 int codec2_create(void);
 void codec2_destroy(void);
 void codec2_encode(unsigned char *, short [], unsigned int charbits);
-void codec2_decode(short [], const unsigned char *);
-void codec2_decode_ber(short [], const unsigned char *, float);
+void codec2_decode(short [], const unsigned char *, unsigned int charbits);
+void codec2_decode_ber(short [], const unsigned char *, float, unsigned int charbits);
 int codec2_samples_per_frame(void);
 int codec2_bits_per_frame(void);
 void codec2_set_lpc_post_filter(int, int, float, float);
