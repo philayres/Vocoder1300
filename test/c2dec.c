@@ -67,14 +67,14 @@ int main(int argc, char *argv[])
     codec2_create();
     nsam = codec2_samples_per_frame();
     nbit = codec2_bits_per_frame();
-    buf = (short*)malloc(nsam*sizeof(short));
+    buf = (short*)malloc(nsam*sizeof(short)*100);
     
     if(charbits)
       nbyte = NUM_CHARBITS;
     else
       nbyte = (nbit + 7) / 8;
     
-    bits = (unsigned char*)malloc(nbyte*sizeof(char));
+    bits = (unsigned char*)malloc(nbyte*sizeof(char)*100);
 
     ret = (fread(bits, sizeof(char), nbyte, fin) == (size_t)nbyte);
 

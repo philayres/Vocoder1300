@@ -33,7 +33,7 @@
  
  diff hts1-c2.raw.hex hts1-c2cb.raw.hex | more
  
- sox -r 8000 -e unsigned -b 16 -c 1 hts1.raw hts1.wav
+ sox -r 8000 -e signed -b 16 -c 1 hts1.raw hts1.wav
  sox -r 8000 -e unsigned -b 16 -c 1 hts1-c2.raw hts1-c2.wav
  sox -r 8000 -e unsigned -b 16 -c 1 hts1-c2cb.raw hts1-c2cb.wav
  sox -r 8000 -e unsigned -b 16 -c 1 LDC97S44-8k-c2cb.raw LDC97S44-8k-c2cb.wav
